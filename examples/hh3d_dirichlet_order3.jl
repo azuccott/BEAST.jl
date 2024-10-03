@@ -5,7 +5,7 @@ o, x, y, z = euclidianbasis(3)
 
 Γ = readmesh(joinpath(dirname(pathof(BEAST)),"../examples/sphere2.in"))
 
-X = BEAST.lagrangecx(Γ; order=1)
+X = BEAST.lagrangecx(Γ; order=3)
 # X = subdsurface(Γ)
 # X = raviartthomas(Γ)
 @show numfunctions(X)
@@ -14,20 +14,25 @@ X = BEAST.lagrangecx(Γ; order=1)
 a = Helmholtz3D.singlelayer(wavenumber=κ)
 # b = Helmholtz3D.doublelayer_transposed(gamma=κ*im) +0.5Identity()
 
-BEAST.@defaultquadstrat (a,X,X) BEAST.DoubleNumSauterQstrat(7,8,6,6,6,6)
-BEAST.@defaultquadstrat (f,X) BEAST.SingleNumQStrat(12)
-
 uⁱ = Helmholtz3D.planewave(wavenumber=κ, direction=z)
 f = strace(uⁱ,Γ)
 # g = ∂n(uⁱ)
 
+BEAST.@defaultquadstrat (a,X,X) BEAST.DoubleNumSauterQstrat(7,8,6,6,6,6)
+BEAST.@defaultquadstrat (f,X) BEAST.SingleNumQStrat(12)
+
 @hilbertspace u
 @hilbertspace v
 
-eq1 = @discretise a[v,u] == f[v] u∈X v∈X
+# eq1 = @discretise a[v,u] == f[v] u∈X v∈X
 # eq2 = @discretise b[v,u] == g[v] u∈X v∈X
 
-x1 = gmres(eq1; tol=1e-3)
+A = assemble(a[v,u], X, X)
+b = assemble(f[v], X)
+x1 = AbstractMatrix(A) \ b
+# x1 = BEAST.GMRESSolver(A; reltol=1e-10) * b
+
+# x1 = gmres(eq1; tol=1e-6)
 # x2 = gmres(eq2)
 
 fcr1, geo1 = facecurrents(x1, X)

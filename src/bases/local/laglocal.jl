@@ -1,18 +1,21 @@
 # T: coeff type
 # Degree: degree
 # Dim1: dimension of the support + 1
-struct LagrangeRefSpace{T,Degree,Dim1,NF} <: RefSpace{T,NF} end
+struct LagrangeRefSpace{T,Degree,Dim1,NF} <: RefSpace{T} end
 
-numfunctions(s::LagrangeRefSpace{T,D,2}) where {T,D} = D+1
-numfunctions(s::LagrangeRefSpace{T,0,3}) where {T} = 1
-numfunctions(s::LagrangeRefSpace{T,1,3}) where {T} = 3
-numfunctions(s::LagrangeRefSpace{T,2,3}) where {T} = 6
+numfunctions(s::LagrangeRefSpace{T,D,2}, ch::CompScienceMeshes.ReferenceSimplex{1}) where {T,D} = D+1
+numfunctions(s::LagrangeRefSpace{T,0,3}, ch::CompScienceMeshes.ReferenceSimplex{2}) where {T} = 1
+numfunctions(s::LagrangeRefSpace{T,1,3}, ch::CompScienceMeshes.ReferenceSimplex{2}) where {T} = 3
+numfunctions(s::LagrangeRefSpace{T,2,3}, ch::CompScienceMeshes.ReferenceSimplex{2}) where {T} = 6
+numfunctions(s::LagrangeRefSpace{T,Dg}, ch::CompScienceMeshes.ReferenceSimplex{D}) where {T,Dg,D} = binomial(D+Dg,Dg)
 
 valuetype(ref::LagrangeRefSpace{T}, charttype) where {T} =
         SVector{numfunctions(ref), Tuple{T,T}}
 
 # Evaluate constant lagrange elements on anything
 (ϕ::LagrangeRefSpace{T,0})(tp) where {T} = SVector(((value=one(T), derivative=zero(T)),))
+(ϕ::LagrangeRefSpace{T,0,3})(tp) where {T} = SVector(((value=one(T), derivative=zero(T)),))
+
 
 # Evaluate linear Lagrange elements on a segment
 function (f::LagrangeRefSpace{T,1,2})(mp) where T
@@ -107,7 +110,8 @@ function strace(x::LagrangeRefSpace, cell, localid, face)
     vals1 = x(P1)
     vals2 = x(P2)
 
-    for j in 1:numfunctions(x)
+    num_shapes = numfunctions(x, domain(cell))
+    for j in 1:num_shapes
         Q[1,j] = vals1[j].value
         Q[2,j] = vals2[j].value
     end
@@ -134,12 +138,13 @@ end
 
 
 function restrict(refs::LagrangeRefSpace{T,0}, dom1, dom2) where T
-    Q = Matrix{T}(I, numfunctions(refs), numfunctions(refs))
+    n = numfunctions(refs, domain(dom1))
+    Q = Matrix{T}(I, n, n)
 end
 
 function restrict(f::LagrangeRefSpace{T,1}, dom1, dom2) where T
 
-    D = numfunctions(f)
+    D = numfunctions(f, domain(dom1))
     Q = zeros(T, D, D)
 
     # for each point of the new domain
@@ -299,6 +304,7 @@ function (ϕ::LagrangeRefSpace{T,Degree,3})(p) where {T,Degree}
     diffvs = T[]
 
     D1 = Degree + 1
+    s = range(zero(T), one(T), length=D1)
     for i in 0:Degree
         ui = i/Degree
         for j in 0:Degree
@@ -307,98 +313,58 @@ function (ϕ::LagrangeRefSpace{T,Degree,3})(p) where {T,Degree}
                 wk = k/Degree
                 i + j + k == Degree || continue
 
-                val = one(T)
+                prod_p = one(T)
                 for p in 0:i-1
                     up = p / Degree
-                    val *= (u-up) / (ui-up)
+                    prod_p *= (u-up) / (ui-up)
                 end
+                prod_q = one(T)
                 for q in 0:j-1
                     vq = q / Degree
-                    val *= (v-vq) / (vj-vq)
+                    prod_q *= (v-vq) / (vj-vq)
                 end
+                prod_r = one(T)
                 for r in 0:k-1
                     wr = r / Degree
-                    val *= (w-wr) / (wk-wr)
+                    prod_r *= (w-wr) / (wk-wr)
                 end
-                push!(vals, val)
+                push!(vals, prod_p * prod_q * prod_r)
 
                 diffu = zero(T)
-                for l in 0:Degree
-                    l == i && continue
-                    ul = l/Degree
-                    terml = one(T)
-                    for p in 0:Degree
-                        p == l && continue
-                        p == i && continue
-                        up = p/Degree
-                        for q in 0:Degree
-                            q == j && continue
-                            vq = q/Degree
-                            for r in 0:Degree
-                                r == k && continue
-                                wr = r/Degree
-                                terml *= (u - up) * (v - vq) * (w - wr) / ((ui - up) * (vj - vq) * (wk - wr))
-                    end end end
-                    diffu += terml / (ui - ul)
-                end
-                for l in 0:Degree
-                    l == k && continue
-                    wl = l/Degree
-                    terml = one(T)
-                    for p in 0:Degree
-                        p == i && continue
-                        up = p/Degree
-                        for q in 0:Degree
-                            q == j && continue
-                            vq = q/Degree
-                            for r in 0:Degree
-                                r == l && continue
-                                r == k && continue
-                                wr = r/Degree
-                                terml *= (u - up) * (v - vq) * (w - wr) / ((ui - up) * (vj - vq) * (wk - wr))
-                    end end end
-                    diffu -= terml / (wk - wl)
-                end
-                push!(diffus, diffu)
-
-
                 diffv = zero(T)
-                for l in 0:Degree
-                    l == j && continue
-                    vl = l/Degree
-                    terml = one(T)
-                    for p in 0:Degree
-                        p == i && continue
+                for l in 0:i-1
+                    ul = l/Degree
+                    prod_pl = one(T)
+                    for p in 0:i-1
+                        p == l && continue
                         up = p/Degree
-                        for q in 0:Degree
-                            q == l && continue
-                            q == j && continue
-                            vq = q/Degree
-                            for r in 0:Degree
-                                r == k && continue
-                                wr = r/Degree
-                                terml *= (u - up) * (v - vq) * (w - wr) / ((ui - up) * (vj - vq) * (wk - wr))
-                    end end end
-                    diffv += terml / (vj - vl)
+                        prod_pl *= (u-up) / (ui-up)
+                    end
+                    diffu += prod_pl * prod_q * prod_r / (ui-ul)
                 end
-                for l in 0:Degree
-                    l == k && continue
-                    wl = l/Degree
-                    terml = one(T)
-                    for p in 0:Degree
-                        p == i && continue
-                        up = p/Degree
-                        for q in 0:Degree
-                            q == j && continue
-                            vq = q/Degree
-                            for r in 0:Degree
-                                r == l && continue
-                                r == k && continue
-                                wr = r/Degree
-                                terml *= (u - up) * (v - vq) * (w - wr) / ((ui - up) * (vj - vq) * (wk -wr))
-                    end end end
-                    diffv -= terml / (wk - wl)
+                for m in 0:j-1
+                    vm = m/Degree
+                    prod_qm = one(T)
+                    for q in 0:j-1
+                        q == m && continue
+                        vq = q/Degree
+                        prod_qm *= (v-vq) / (vj-vq)
+                    end
+                    diffv += prod_p * prod_qm * prod_r / (vj-vm)
                 end
+                for n in 0:k-1
+                    wn = n/Degree
+                    prod_rn = one(T)
+                    for r in 0:k-1
+                        r == n && continue
+                        wr = r/Degree
+                        prod_rn *= (w-wr) / (wk-wr)
+                    end
+                    diffu -= prod_p * prod_q * prod_rn / (wk-wn)
+                    diffv -= prod_p * prod_q * prod_rn / (wk-wn)
+                end
+
+                push!(diffus, diffu)
                 push!(diffvs, diffv)
 
                 idx += 1
