@@ -1,5 +1,4 @@
 using WiltonInts84
-using TimeDomainBEMInt
 
 abstract type AbstractSpaceTimeOperator end
 abstract type SpaceTimeOperator <: AbstractSpaceTimeOperator end # atomic operator
@@ -318,15 +317,6 @@ struct WiltonInts84Strat{T,V,W}
     workspace::W
 end
 
-struct HybridZuccottiWiltonStrat{T,V,W}
-    outer_quad_points::T
-    binomials::V
-    workspace::W
-end
-
-struct ZuccottiRule{T}
-	weight::T #Allanalyticalformula
-end
 
 function momintegrals!(z, op, g, f, T, τ, σ, ι, qr::WiltonInts84Strat)
 
