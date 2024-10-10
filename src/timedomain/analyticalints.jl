@@ -31,10 +31,11 @@ function rings1d(τ, σ, ΔR)
 end
 
 
-
-function quaddata(op::AcusticSingleLayerTDIO, testrefs, trialrefs, timerefs,
-    testels::Vector{Simplex{3,0,3,1,T}}, trialels::Vector{Simplex{3,1,1,2,T}}, timeels, quadstrat::AllAnalyticalQStrat) where T
-    
+#forse vanno corretti i tipi
+#function quaddata(op::AcusticSingleLayerTDIO, testrefs, trialrefs, timerefs,
+ #   testels::Vector{Simplex{3,0,3,1,T}}, trialels::Vector{Simplex{3,1,1,2,T}}, timeels, quadstrat::AllAnalyticalQStrat) where T
+ function quaddata(
+    testels::Vector{SVectro{3,T}}, trialels::Vector{Simplex{3,1,2,2,T}}) where T    
     dimU=dimension(testels)
     dimV=dimension(trialels)
     #rigerenerare delta R
