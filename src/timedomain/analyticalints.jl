@@ -1,13 +1,14 @@
 function minmax1d(vertex,edge) #perhce questa e' gia inclusa in edgevertexinteraction?
-        T = eltype(τ[1])
+        T = eltype(vertex)
         m = norm(vertex-edge[1])
         M = m
         s=edge[1]-edge[2]
         s/=norm(s)
         ev1=edge[1]-vertex
         x0=(edge[1]-dot(ev1,s)*s)
-        a=(edge[2]-x0)*s
-        b=(edge[1]-x0)*s
+        
+        a=dot((edge[2]-x0),s)
+        b=dot((edge[1]-x0),s)
         if a<=0 && b>=0
            m=norm(vertex-x0)
            if abs(a)<abs(b)
@@ -26,10 +27,10 @@ function minmax1d(vertex,edge) #perhce questa e' gia inclusa in edgevertexintera
 end 
 
 function rings1d(τ, σ, ΔR)
-	m, M = minmaxdist(τ, σ)
-	r0 = floor(Int, m/ΔR) + 1
-	r1 = ceil(Int, M/ΔR+1)
-	r0 : r1
+	m, M = minmax1d(τ, σ)
+	r0 = floor(Int, m/ΔR) +1
+	r1 = ceil(Int, M/ΔR)
+	return r0:r1
 end
 
 
@@ -37,9 +38,9 @@ end
 #function quaddata1D(op::AcusticSingleLayerTDIO, testrefs, trialrefs, timerefs,
  #   testels::Vector{Simplex{3,0,3,1,T}}, trialels::Vector{Simplex{3,1,1,2,T}}, timeels, quadstrat::AllAnalyticalQStrat,ΔR) where T
  function quaddata(
-    testels::Vector{SVector{3,T}}, trialels::Vector{CompScienceMeshes.Simplex{3,1,2,2,T}}) where T    
-    dimU=dimension(testels)
-    dimV=dimension(trialels)
+    testels::Vector{SVector{3,T}}, trialels::Vector{CompScienceMeshes.Simplex{3,1,2,2,T}},ΔR) where T    
+    #dimU=dimension(testels[1])
+    #dimV=dimension(trialels[1])
     #rigerenerare delta R
     #quaddata 1D
     #@assert dimU+dimV==1
@@ -49,22 +50,22 @@ end
         numnodes=length(testels)
         numedges=length(trialels)
 
-        datavertexedge=Array{TimeDomainBEMInt.edgevertexgeo{T,P}, 2}(undef, numnodes, numedges)
+        datavertexedge=Array{TimeDomainBEMInt.edgevertexgeo, 2}(undef, numnodes, numedges)
         rings=Array{UnitRange{Int},2}(undef, numnodes, numedges)
         datarings=Array{Vector{Tuple{Int,Vector}},2}(undef,numnodes,numedges)#il type va bene
 
         #fill datarings with zeross !
 
         for p in 1:numnodes
-            τ = chart(testels,p)#testels[p]
+            τ = testels[p]#testels[p]
             for q in 1:numedges
-                σ = chart(trialels,q)
+                σ = trialels[q]
                 edgevertgeo=TimeDomainBEMInt.edgevertexinteraction(τ,σ[1],σ[2])
                 datavertexedge[p,q]=edgevertgeo
-                a,b=edgevertegeo.extint0[1],edgevertegeo.extint0[2]
+                a,b=edgevertgeo.extint0[1],edgevertgeo.extint0[2] # a cosa servono?
                 rngs=rings1d(τ,σ,ΔR)#problem ΔR #nota: edevertexgeo gia calcola min e max dist che rings chiama al suo interno di nuovo
                 rings[p,q]=rngs
-                datarings[p,q]=[0,[0.0,0.0]]
+                datarings[p,q]=[(0,[0.0,0.0])]
                 for r in rngs
                     #r > numfunctions(timebasisfunction) && continue #serve? era in quaddata originale
                     #ι = ring(r,ΔR)#ma serve? se poi prendo solo il num 2
