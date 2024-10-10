@@ -1,4 +1,4 @@
-function minmax1d(vertex,edge)
+function minmax1d(vertex,edge) #perhce questa e' gia inclusa in edgevertexinteraction?
         T = eltype(τ[1])
         m = norm(vertex-edge[1])
         M = m
@@ -10,7 +10,9 @@ function minmax1d(vertex,edge)
         b=(edge[1]-x0)*s
         if a<=0 && b>=0
            m=norm(vertex-x0)
-           abs(a)<abs(b) && (M=norm(vertex-edge[2]))
+           if abs(a)<abs(b)
+                M=norm(vertex-edge[2])
+           end   
             
         else
             for j in 1:length(edge)
@@ -31,16 +33,16 @@ function rings1d(τ, σ, ΔR)
 end
 
 
-#forse vanno corretti i tipi
-#function quaddata(op::AcusticSingleLayerTDIO, testrefs, trialrefs, timerefs,
- #   testels::Vector{Simplex{3,0,3,1,T}}, trialels::Vector{Simplex{3,1,1,2,T}}, timeels, quadstrat::AllAnalyticalQStrat) where T
+#TODO risolvere problema delta R non include nell'original quaddata (4d quaddata)#forse vanno corretti i tipi
+#function quaddata1D(op::AcusticSingleLayerTDIO, testrefs, trialrefs, timerefs,
+ #   testels::Vector{Simplex{3,0,3,1,T}}, trialels::Vector{Simplex{3,1,1,2,T}}, timeels, quadstrat::AllAnalyticalQStrat,ΔR) where T
  function quaddata(
     testels::Vector{SVectro{3,T}}, trialels::Vector{Simplex{3,1,2,2,T}}) where T    
     dimU=dimension(testels)
     dimV=dimension(trialels)
     #rigerenerare delta R
-#quaddata 1D
-    #if dimU+dimV==1
+    #quaddata 1D
+    #@assert dimU+dimV==1
     #testelsboundary=skeleton(testels,dimU-1)
    # trialelsboundary=skeleton(trialels,dimV-1) 
     
@@ -60,18 +62,16 @@ end
                 edgevertgeo=TimeDomainBEMInt.edgevertexinteraction(τ,σ[1],σ[2])
                 datavertexedge[p,q]=edgevertgeo
                 a,b=edgevertegeo.extint0[1],edgevertegeo.extint0[2]
-                rngs=rings1d(τ,σ,ΔR)
+                rngs=rings1d(τ,σ,ΔR)#problem ΔR #nota: edevertexgeo gia calcola min e max dist che rings chiama al suo interno di nuovo
                 rings[p,q]=rngs
                 datarings[p,q]=[0,[0.0,0.0]]
                 for r in rngs
-                    r > numfunctions(timebasisfunction) && continue #serve?
-                    ι = ring(r,ΔR)
+                    #r > numfunctions(timebasisfunction) && continue #serve? era in quaddata originale
+                    #ι = ring(r,ΔR)#ma serve? se poi prendo solo il num 2
 
-                    # compute interactions between reference shape functions
-                    #fill!(z, 0)
                     rp=τ #se e un simplex ok se no va messo chart(τ,1).vertices credo
-                    t2=ι[2]#needs a check
-                    extint=TimeDomainBEMInt.edgevertexinteraction(t2,edgevertgeo)
+                    #t2=ι[2]#needs a check
+                    extint=TimeDomainBEMInt.edgevertexinteraction(r,edgevertgeo)
                     push!(datarings[p,q],extint)
     
                     # qr = quadrule(op, U, V, W, p, τ, q, σ, r, ι, qd, quadstrat)
@@ -80,20 +80,22 @@ end
             end
         end
 
-        return datavertexedge
+        return datavertexedge, rings, datarings
     #else
      #   return "devo ancora scrivere"
     #end
 end
 
-function quaddata2Dee(op::AcusticSingleLayerTDIO, testrefs, trialrefs, timerefs,
+function quaddata2D_edg_edg(op::AcusticSingleLayerTDIO, testrefs, trialrefs, timerefs,
     testels::Vector{Simplex{3,1,1,2,T}}, trialels::Vector{Simplex{3,1,1,2,T}}, timeels, quadstrat::AllAnalyticalQStrat)
-    nnodes=length(nodes)
-
     
+    nnodes=length(nodes) #i nodes sono salvati?
+
+    numedges=length(testels)
     totrings=Array{UnitRange{Int},2}(undef, numedges, numedges)
     datavalues=Array{Vector{Tuple{Int,Vector}},2}(undef,numedges,numedges)
     cnnct=connectivity(edges,nodes)
+    #edgevertexgeo,rings,datarings vanno specificati ancora. suppongo(quasi certamente) sia sufficiente prenderli come gli output di quaddata1D
     
     for p in 1:numdges
         for q in 1:numedges
@@ -117,7 +119,7 @@ function quaddata2Dee(op::AcusticSingleLayerTDIO, testrefs, trialrefs, timerefs,
                 b2,b1=edge2[1],edge2[2]
             end
 
-            geo1,rings1,datarings1=edgevertexgeo[vertind1[1],q],rings[vertind1[1],q],datarings[vertind1[1],q]
+            geo1,rings1,datarings1=edgevertexgeo[vertind1[1],q],rings[vertind1[1],q],datarings[vertind1[1],q]#vanno definiti tra gli input
             geo2,rings2,datarings2=edgevertexgeo[vertind1[2],q],rings[vertind1[2],q],datarings[vertind1[2],q]
             geo3,rings3,datarings3=edgevertexgeo[vertind2[1],p],rings[vertind2[1],p],datarings[vertind2[1],p]
             geo4,rings4,datarings4=edgevertexgeo[vertind2[2],p],rings[vertind2[2],p],datarings[vertind2[2],p]
@@ -190,7 +192,7 @@ function intlinelineglobal(a1,a2,b1,b2,geo,rings,datarings,parcontrol,UB::Type{V
     allint=Vector{typeof((I,K))}(undef,r1-r0+2)
     fill!(allint,(I,K))
     if norm(hdir) < (parcontrol[1])*eps(typeof(temp1))
-        I=intparallelsegment(a1,a2,b1,b2,temp1,temp2)[1] #attenzione qui non compatibile con quello che stiamo scrivendo
+        I=intparallelsegment(a1,a2,b1,b2,temp1,temp2)[1] #TODO attenzione qui non compatibile con quello che stiamo scrivendo
     else
         n=hdir/norm(hdir)
         sgnn=[+1,-1,-1,+1]
@@ -228,6 +230,6 @@ function intlinelineglobal(a1,a2,b1,b2,geo,rings,datarings,parcontrol,UB::Type{V
             #I+=(1/abs(r12′[2]*r12[1]))*(3*(temp2^2-temp1^2)*d[1]-2*(temp2^3-temp1^3)*d[2])
     end
     
-    return ringtot,allint #missing buidgrad since it is not yet adapted for int line line
+    return ringtot,allint #missing buidgrad since it is not yet adapted for int line line ci serve??
 end
 
