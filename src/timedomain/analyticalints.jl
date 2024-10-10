@@ -37,7 +37,7 @@ end
 #function quaddata1D(op::AcusticSingleLayerTDIO, testrefs, trialrefs, timerefs,
  #   testels::Vector{Simplex{3,0,3,1,T}}, trialels::Vector{Simplex{3,1,1,2,T}}, timeels, quadstrat::AllAnalyticalQStrat,ΔR) where T
  function quaddata(
-    testels::Vector{SVectro{3,T}}, trialels::Vector{Simplex{3,1,2,2,T}}) where T    
+    testels::Vector{SVector{3,T}}, trialels::Vector{CompScienceMeshes.Simplex{3,1,2,2,T}}) where T    
     dimU=dimension(testels)
     dimV=dimension(trialels)
     #rigerenerare delta R
@@ -86,8 +86,8 @@ end
     #end
 end
 
-function quaddata2D_edg_edg(op::AcusticSingleLayerTDIO, testrefs, trialrefs, timerefs,
-    testels::Vector{Simplex{3,1,1,2,T}}, trialels::Vector{Simplex{3,1,1,2,T}}, timeels, quadstrat::AllAnalyticalQStrat)
+function quaddata2D_edg_edg( op#=::AcusticSingleLayerTDIO=#, testrefs, trialrefs, timerefs,
+    testels::Vector{CompScienceMeshes.Simplex{3,1,1,2,T}}, trialels::Vector{CompScienceMeshes.Simplex{3,1,1,2,T}}, timeels, quadstrat::AllAnalyticalQStrat) where T
     
     nnodes=length(nodes) #i nodes sono salvati?
 
