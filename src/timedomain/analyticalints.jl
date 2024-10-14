@@ -37,7 +37,7 @@ end
 #TODO risolvere problema delta R non include nell'original quaddata (4d quaddata)#forse vanno corretti i tipi
 #function quaddata1D(op::AcusticSingleLayerTDIO, testrefs, trialrefs, timerefs,
  #   testels::Vector{Simplex{3,0,3,1,T}}, trialels::Vector{Simplex{3,1,1,2,T}}, timeels, quadstrat::AllAnalyticalQStrat,ΔR) where T
- function quaddata(
+ function quaddata1D(
     testels::Vector{SVector{3,T}}, trialels::Vector{CompScienceMeshes.Simplex{3,1,2,2,T}},ΔR) where T    
     #dimU=dimension(testels[1])
     #dimV=dimension(trialels[1])
@@ -87,21 +87,24 @@ end
     #end
 end
 
-function quaddata2D_edg_edg( op#=::AcusticSingleLayerTDIO=#, testrefs, trialrefs, timerefs,
-    testels::Vector{CompScienceMeshes.Simplex{3,1,1,2,T}}, trialels::Vector{CompScienceMeshes.Simplex{3,1,1,2,T}}, timeels, quadstrat::AllAnalyticalQStrat) where T
+function quaddata2D_edg_edg(
+    testels::Vector{CompScienceMeshes.Simplex{3,1,2,2,T}}, trialels::Vector{CompScienceMeshes.Simplex{3,1,2,2,T}},ΔR,quaddata1D,connectivity) where T
+    #(op::AcusticSingleLayerTDIO, testrefs, trialrefs, timerefs,
+    #testels::Vector{CompScienceMeshes.Simplex{3,1,1,2,T}}, trialels::Vector{CompScienceMeshes.Simplex{3,1,1,2,T}}, timeels, quadstrat::AllAnalyticalQStrat) where T
     
-    nnodes=length(nodes) #i nodes sono salvati?
+    #nnodes=length(nodes) #i nodes sono salvati?
 
     numedges=length(testels)
     totrings=Array{UnitRange{Int},2}(undef, numedges, numedges)
     datavalues=Array{Vector{Tuple{Int,Vector}},2}(undef,numedges,numedges)
-    cnnct=connectivity(edges,nodes)
+    cnnct=connectivity#connectivity(edges,nodes)
     #edgevertexgeo,rings,datarings vanno specificati ancora. suppongo(quasi certamente) sia sufficiente prenderli come gli output di quaddata1D
-    
-    for p in 1:numdges
-        for q in 1:numedges
-            edge1=chart(edges,p)
-            edge2=chart(edges,q)
+    nnodes=size(cnnct,1)
+    edgevertexgeo,rings,datarings=quaddata1D[1],quaddata1D[2],quaddata1D[3]
+    for p in 1:numedges
+        for q in 1:(p-1) #escluso p=q perche non ci serve da calcolare
+            edge1=testels[p] #chart(edges,p)
+            edge2=trialels[q] #chart(edges,q)
             
             vertind1=cnnct[1:nnodes,p].nzind
             vertsgn1=cnnct[1:nnodes,p].nzval
@@ -129,14 +132,14 @@ function quaddata2D_edg_edg( op#=::AcusticSingleLayerTDIO=#, testrefs, trialrefs
             rings=[rings1,rings2,rings3,rings4]
             datarings=[datarings1,datarings2,datarings3,datarings4]
 
-            totrings[p,q],datavalues[p,q]=intlinelineglobal(a1,a2,b1,b2,geo,rings,datarings,[10^6,10^6,10^6],Val{0}) 
+            totrings[p,q],datavalues[p,q]=intlinelineglobal(a1,a2,b1,b2,geo,rings,datarings,[10^6,10^6,10^6],ΔR,Val{0}) 
         end
     end
     return totrings,datavalues
 end
 
 
-function intlinelineglobal(a1,a2,b1,b2,geo,rings,datarings,parcontrol,UB::Type{Val{N}}) where N
+function intlinelineglobal(a1,a2,b1,b2,geo,rings,datarings,parcontrol,ΔR,UB::Type{Val{N}}) where N
         
     #nedges=length(edges)
    
@@ -153,8 +156,8 @@ function intlinelineglobal(a1,a2,b1,b2,geo,rings,datarings,parcontrol,UB::Type{V
     #geo4=edgevertexinteraction(a2′,a1,a2)
     
     #datatime=Array{Tuple}(undef,2,4)?
-    I = maketuple(eltype(a1), UB)
-    K = maketuple(typeof(a1), UB)
+    I = WiltonInts84.maketuple(eltype(a1), UB)
+    K = WiltonInts84.maketuple(typeof(a1), UB)
     
     x=geo[3].tangent
 
@@ -169,16 +172,17 @@ function intlinelineglobal(a1,a2,b1,b2,geo,rings,datarings,parcontrol,UB::Type{V
         h=dot(a2-b2,n)
         sgnh=[+1,-1,+1,-1]
         angletot=0.0
-        dminv=Vector{eltype(edge1[1])}(undef, 4)
-        ξ=Vector{typeof(edge1[1])}(undef, 4)
+        dminv=Vector{eltype(a1)}(undef, 4)
+        dmaxv=Vector{eltype(a1)}(undef, 4)
+        ξ=Vector{typeof(a1)}(undef, 4)
         for j in 1:4
             dminv[j]=geo[j].dmin
             dmaxv[j]=geo[j].dmax 
             v=vertices[j]
             ξ[j]=v-n*h*sgnh[j]*sgnn[j] 
-            angletot+=anglecontribution(ξ[j],sgnn[j]*n,geo[j])
+            angletot+=TimeDomainBEMInt.anglecontribution(ξ[j],sgnn[j]*n,geo[j])
         end
-    if abs(angletot-2π)<100*eps(eltype(edge1[1]))
+    if abs(angletot-2π)<100*eps(eltype(a1))
         dmin=abs(h)
     else
         dmin=min(dminv[1],dminv[2],dminv[3],dminv[4])
@@ -186,18 +190,17 @@ function intlinelineglobal(a1,a2,b1,b2,geo,rings,datarings,parcontrol,UB::Type{V
 
     dmax=max(dmaxv[1],dmaxv[2],dmaxv[3],dmaxv[4])
 
-    r0 = floor(Int, dmin/ΔR) + 1
-	r1 = ceil(Int, dmax/ΔR+1) #recuperare deltaR
+    r0 = floor(Int, dmin/ΔR) +1 
+	r1 = ceil(Int, dmax/ΔR)#+1) #recuperare deltaR
 	ringtot = r0 : r1
-
     allint=Vector{typeof((I,K))}(undef,r1-r0+2)
     fill!(allint,(I,K))
-    if norm(hdir) < (parcontrol[1])*eps(typeof(temp1))
+    if norm(hdir) < (parcontrol[1])*eps(eltype(a1))
         I=intparallelsegment(a1,a2,b1,b2,temp1,temp2)[1] #TODO attenzione qui non compatibile con quello che stiamo scrivendo
     else
         n=hdir/norm(hdir)
         sgnn=[+1,-1,-1,+1]
-        h=dot(a2-a2′,n)
+        h=dot(a2-b2,n)
         sgnh=[+1,-1,+1,-1]
         for j in 1:4  
             for i in ringtot[1]:(rings[j][1]-1)
