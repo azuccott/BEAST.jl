@@ -11,6 +11,7 @@ function lagdimension end
 # M: mesh type
 # T: field type
 # NF: number of local shape functions
+# P: point type
 mutable struct LagrangeBasis{D,C,M,T,NF,P} <: Space{T}
   geo::M
   fns::Vector{Vector{Shape{T}}}
@@ -977,7 +978,8 @@ function lagrangec0(mesh::CompScienceMeshes.AbstractMesh{<:Any,3}; order)
     N = nV + nE + nF
 
     localspace = LagrangeRefSpace{T,order,3,binomial(2+order,2)}()
-    localdim = numfunctions(localspace)
+    dom = domain(chart(mesh, first(mesh)))
+    localdim = numfunctions(localspace, dom)
     
     d = order
     fns = [S[] for n in 1:(nV+nE+nF)]

@@ -1,5 +1,14 @@
 struct GWPCurlRefSpace{T,Degree} <: RefSpace{T} end
 
+function numfunctions(x::GWPCurlRefSpace{<:Any,D},
+        dom::CompScienceMeshes.ReferenceSimplex{2}) where {D}
+        (D+1)*(D+3)
+end
+function dimtype(x::GWPCurlRefSpace{<:Any,D},
+    dom::CompScienceMeshes.ReferenceSimplex{2}) where {D}
+    Val{(D+1)*(D+3)}
+end
+
 function (ϕ::GWPCurlRefSpace{T,Degree})(p) where {T,Degree}
     dom = domain(chart(p))
     u = parametric(p)
@@ -10,22 +19,26 @@ end
 function (ϕ::GWPCurlRefSpace{T,Deg})(dom::CompScienceMeshes.ReferenceSimplex{Dim},
     u) where {T,Deg,Dim}
 
+    ϕ(dom, u, dimtype(ϕ,dom))
+end
+
+function (ϕ::GWPCurlRefSpace{T,Deg})(dom::CompScienceMeshes.ReferenceSimplex{Dim},
+    u, ::Type{Val{NF}}) where {T,Deg,Dim,NF}
+
     d = Deg
     u, v = u
     w = 1-u-v
 
-    s = range(zero(T), one(T), length=d+3)    
-    # rwg1 = point(T, u-1, v)
-    # rwg2 = point(T, u, v-1)
-    # rwg3 = point(T, u, v)
+    s = range(zero(T), one(T), length=d+3)
+
     nd1 = point(T, -v, u-1)
     nd2 = point(T, -v+1, u)
     nd3 = point(T, -v, u)
 
     P = SVector{2,T}
-    vals = P[]
-    dffu = T[]
-    dffv = T[]
+    NT = @NamedTuple{value::P, curl::T}
+    nts = Vector{NT}(undef, NF)
+    idx = 1
 
     i = 0
     for j in 1:d+1
@@ -33,9 +46,16 @@ function (ϕ::GWPCurlRefSpace{T,Deg})(dom::CompScienceMeshes.ReferenceSimplex{Di
             Rᵢ = _sylpoly(s, i+1, u)
             Rⱼ = _sylpoly_shift(s, j+1, v)
             Rₖ = _sylpoly_shift(s, k+1, w)
-            push!(vals, Rᵢ*Rⱼ*Rₖ*nd1)
+            
+            dRᵢ = _sylpoly_diff(s, i+1, u)
+            dRⱼ = _sylpoly_shift_diff(s, j+1, v)
+            dRₖ = _sylpoly_shift_diff(s, k+1, w)
+            du = dRᵢ*Rⱼ*Rₖ - Rᵢ*Rⱼ*dRₖ
+            dv = Rᵢ*dRⱼ*Rₖ - Rᵢ*Rⱼ*dRₖ
+            curl = (du*nd1[2] - dv*nd1[1]) + 2*Rᵢ*Rⱼ*Rₖ
 
-            # du = _sylpoly_shift_diff(s, i+1, u)*Rⱼ*Rₖ
+            nts[idx] = (value=Rᵢ*Rⱼ*Rₖ*nd1, curl=curl)
+            idx += 1
     end
 
     for i in 1:d+1
@@ -44,7 +64,16 @@ function (ϕ::GWPCurlRefSpace{T,Deg})(dom::CompScienceMeshes.ReferenceSimplex{Di
         Rᵢ = _sylpoly_shift(s, i+1, u)
         Rⱼ = _sylpoly(s, j+1, v)
         Rₖ = _sylpoly_shift(s, k+1, w)
-        push!(vals, Rᵢ*Rⱼ*Rₖ*nd2)
+        
+        dRᵢ = _sylpoly_shift_diff(s, i+1, u)
+        dRⱼ = _sylpoly_diff(s, j+1, v)
+        dRₖ = _sylpoly_shift_diff(s, k+1, w)
+        du = dRᵢ*Rⱼ*Rₖ - Rᵢ*Rⱼ*dRₖ
+        dv = Rᵢ*dRⱼ*Rₖ - Rᵢ*Rⱼ*dRₖ
+        curl = (du*nd2[2] - dv*nd2[1]) + 2*Rᵢ*Rⱼ*Rₖ
+
+        nts[idx] = (value=Rᵢ*Rⱼ*Rₖ*nd2, curl=curl)
+        idx += 1
     end
 
     for i in 1:d+1
@@ -53,7 +82,17 @@ function (ϕ::GWPCurlRefSpace{T,Deg})(dom::CompScienceMeshes.ReferenceSimplex{Di
         Rᵢ = _sylpoly_shift(s, i+1, u)
         Rⱼ = _sylpoly_shift(s, j+1, v)
         Rₖ = _sylpoly(s, k+1, w)
-        push!(vals, Rᵢ*Rⱼ*Rₖ*nd3)
+        
+        dRᵢ = _sylpoly_shift_diff(s, i+1, u)
+        dRⱼ = _sylpoly_shift_diff(s, j+1, v)
+        dRₖ = _sylpoly_diff(s, k+1, w)
+        
+        du = dRᵢ*Rⱼ*Rₖ - Rᵢ*Rⱼ*dRₖ
+        dv = Rᵢ*dRⱼ*Rₖ - Rᵢ*Rⱼ*dRₖ
+        curl = (du*nd3[2] - dv*nd3[1]) + 2*Rᵢ*Rⱼ*Rₖ
+
+        nts[idx] = (value=Rᵢ*Rⱼ*Rₖ*nd3, curl=curl)
+        idx += 1
     end
 
     for i in 1:d+1
@@ -69,15 +108,34 @@ function (ϕ::GWPCurlRefSpace{T,Deg})(dom::CompScienceMeshes.ReferenceSimplex{Di
             S1 = Rᵢ*Rsⱼ*Rsₖ*nd1
             S2 = Rsᵢ*Rⱼ*Rsₖ*nd2
             S3 = Rsᵢ*Rsⱼ*Rₖ*nd3
-            N1 = (d+2)/(d+2-i)
-            N2 = (d+2)/(d+2-j)
-            N3 = (d+2)/(d+2-k)
-            push!(vals, S2-S3)
-            push!(vals, S3-S1)
+
+            dRsᵢ = _sylpoly_shift_diff(s, i+1, u)
+            dRsⱼ = _sylpoly_shift_diff(s, j+1, v)
+            dRsₖ = _sylpoly_shift_diff(s, k+1, w)
+            dRᵢ = _sylpoly_diff(s, i+1, u)
+            dRⱼ = _sylpoly_diff(s, j+1, v)
+            dRₖ = _sylpoly_diff(s, k+1, w)
+
+            du = dRᵢ*Rsⱼ*Rsₖ - Rᵢ*Rsⱼ*dRsₖ
+            dv = Rᵢ*dRsⱼ*Rsₖ - Rᵢ*Rsⱼ*dRsₖ
+            curlS1 = du*nd1[2] - dv*nd1[1] + 2*Rᵢ*Rsⱼ*Rsₖ
+
+            du = dRsᵢ*Rⱼ*Rsₖ - Rsᵢ*Rⱼ*dRsₖ
+            dv = Rsᵢ*dRⱼ*Rsₖ - Rsᵢ*Rⱼ*dRsₖ
+            curlS2 = du*nd2[2] - dv*nd2[1] + 2*Rsᵢ*Rⱼ*Rsₖ
+
+            du = dRsᵢ*Rsⱼ*Rₖ - Rsᵢ*Rsⱼ*dRₖ
+            dv = Rsᵢ*dRsⱼ*Rₖ - Rsᵢ*Rsⱼ*dRₖ
+            curlS3 = du*nd3[2] - dv*nd3[1] + 2*Rsᵢ*Rsⱼ*Rₖ
+
+            nts[idx] = (value=S2-S3, curl=curlS2 - curlS3)
+            idx += 1
+            
+            nts[idx] = (value=S3-S1, curl=curlS3 - curlS1)
+            idx += 1
     end end
 
-    NF = length(vals)
-    SVector{NF}([(value=f, curl=zero(T)) for f in vals])
+    return SVector{NF}(nts)
 end
 
 
@@ -141,4 +199,19 @@ function interpolate(fields, interpolant::GWPCurlRefSpace{T,Degree}, chart) wher
         end
     end
     return Q
+end
+
+function localindices(localspace::GWPCurlRefSpace{<:Any,Degree}, domain,
+    dim::Type{Val{1}}, i) where {Degree}
+    
+    ne = Degree+1
+    (i-1)*ne .+ (1:ne)
+end
+
+function localindices(localspace::GWPCurlRefSpace{<:Any,Degree}, domain,
+    dim::Type{Val{2}}, i) where {Degree}
+    
+    ne = Degree+1
+    nf = Degree * (Degree + 1)
+    3*ne .+ (1:nf)
 end
