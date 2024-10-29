@@ -1,4 +1,4 @@
-function minmax1d(vertex,edge) #perhce questa e' gia inclusa in edgevertexinteraction?
+#=function minmax1d(vertex,edge) #perche questa e' gia inclusa in edgevertexinteraction?
         T = eltype(vertex)
         m = norm(vertex-edge[1])
         M = m
@@ -24,12 +24,12 @@ function minmax1d(vertex,edge) #perhce questa e' gia inclusa in edgevertexintera
             end
         end
         return m, M
-end 
+end =# #ce errore in calcolo di d max ma sembrerebbe corretto invece in TimeDomainBEMInt (edgevvertrexgeo)
 
 function rings1d(τ, σ, ΔR)
 	m, M = minmax1d(τ, σ)
-	r0 = floor(Int, m/ΔR) +1
-	r1 = ceil(Int, M/ΔR)
+	r0 = floor(Int, m/ΔR+1) #non include anello piu interno perche poi si calcola: anello i meno anello i-1
+	r1 = ceil(Int, M/ΔR) #include anello piu esterno
 	return r0:r1
 end
 
@@ -62,8 +62,13 @@ end
                 σ = trialels[q]
                 edgevertgeo=TimeDomainBEMInt.edgevertexinteraction(τ,σ[1],σ[2])
                 datavertexedge[p,q]=edgevertgeo
-                a,b=edgevertgeo.extint0[1],edgevertgeo.extint0[2] # a cosa servono?
-                rngs=rings1d(τ,σ,ΔR)#problem ΔR #nota: edevertexgeo gia calcola min e max dist che rings chiama al suo interno di nuovo
+               # a,b=edgevertgeo.extint0[1],edgevertgeo.extint0[2]
+                 # a cosa servono?
+                mind=edgevertgeo.dmin
+                maxd=edgevertgeo.dmax
+                r0 = floor(Int, mind/ΔR+1) #non include anello piu interno perche poi si calcola: anello i meno anello i-1
+	            r1 = ceil(Int, maxd/ΔR) 
+                rngs=r0:r1
                 rings[p,q]=rngs
                 datarings[p,q]=[(0,[0.0,0.0])]
                 for r in rngs
@@ -96,12 +101,12 @@ function quaddata2D_edg_edg(
 
     numedges=length(testels)
     totrings=Array{UnitRange{Int},2}(undef, numedges, numedges)
-    datavalues=Array{Vector{Tuple{Int,Vector}},2}(undef,numedges,numedges)
+    datavalues=Array{Vector{Tuple{Tuple,Tuple}},2}(undef,numedges,numedges)
     cnnct=connectivity#connectivity(edges,nodes)
     #edgevertexgeo,rings,datarings vanno specificati ancora. suppongo(quasi certamente) sia sufficiente prenderli come gli output di quaddata1D
     nnodes=size(cnnct,1)
     edgevertexgeo,rings,datarings=quaddata1D[1],quaddata1D[2],quaddata1D[3]
-    for p in 1:numedges
+    for p in 2:numedges
         for q in 1:(p-1) #escluso p=q perche non ci serve da calcolare
             edge1=testels[p] #chart(edges,p)
             edge2=trialels[q] #chart(edges,q)
@@ -123,16 +128,16 @@ function quaddata2D_edg_edg(
                 b2,b1=edge2[1],edge2[2]
             end
 
-            geo1,rings1,datarings1=edgevertexgeo[vertind1[1],q],rings[vertind1[1],q],datarings[vertind1[1],q]#vanno definiti tra gli input
+            geo1,rings1,datarings1=edgevertexgeo[vertind1[1],q],rings[vertind1[1],q],datarings[vertind1[1],q]
             geo2,rings2,datarings2=edgevertexgeo[vertind1[2],q],rings[vertind1[2],q],datarings[vertind1[2],q]
             geo3,rings3,datarings3=edgevertexgeo[vertind2[1],p],rings[vertind2[1],p],datarings[vertind2[1],p]
             geo4,rings4,datarings4=edgevertexgeo[vertind2[2],p],rings[vertind2[2],p],datarings[vertind2[2],p]
 
             geo=[geo1,geo2,geo3,geo4]
-            rings=[rings1,rings2,rings3,rings4]
-            datarings=[datarings1,datarings2,datarings3,datarings4]
-
-            totrings[p,q],datavalues[p,q]=intlinelineglobal(a1,a2,b1,b2,geo,rings,datarings,[10^6,10^6,10^6],ΔR,Val{0}) 
+            rings_edgedg=[rings1,rings2,rings3,rings4]
+            datarings_edgedg=[datarings1,datarings2,datarings3,datarings4]
+            print([p,q]," sto per chiamare linelineglobal ")
+            totrings[p,q],datavalues[p,q]=intlinelineglobal(a1,a2,b1,b2,geo,rings_edgedg,datarings_edgedg,[10^6,10^6,10^6],ΔR,Val{0}) 
         end
     end
     return totrings,datavalues
@@ -190,12 +195,13 @@ function intlinelineglobal(a1,a2,b1,b2,geo,rings,datarings,parcontrol,ΔR,UB::Ty
 
     dmax=max(dmaxv[1],dmaxv[2],dmaxv[3],dmaxv[4])
 
-    r0 = floor(Int, dmin/ΔR) +1 
+    r0 = floor(Int, dmin/ΔR+1) 
 	r1 = ceil(Int, dmax/ΔR)#+1) #recuperare deltaR
 	ringtot = r0 : r1
-    allint=Vector{typeof((I,K))}(undef,r1-r0+2)
+    allint=Vector{typeof((I,K))}(undef,r1-r0+1)
     fill!(allint,(I,K))
     if norm(hdir) < (parcontrol[1])*eps(eltype(a1))
+        
         I=intparallelsegment(a1,a2,b1,b2,temp1,temp2)[1] #TODO attenzione qui non compatibile con quello che stiamo scrivendo
     else
         n=hdir/norm(hdir)
@@ -204,26 +210,49 @@ function intlinelineglobal(a1,a2,b1,b2,geo,rings,datarings,parcontrol,ΔR,UB::Ty
         sgnh=[+1,-1,+1,-1]
         for j in 1:4  
             for i in ringtot[1]:(rings[j][1]-1)
-                        
-                        P,Q  = arcsegcontribution(v,ξ[j],sgnn[j]*n,sgnh[j]*h,geo[j],0,[0,0],i*ΔR,UB)
-                        allint[i-ringtot[1]+2][1] = add(allint[i-ringtot[1]+2][1],P)
-                        allint[i-ringtot[1]+2][2] = add(allint[i-ringtot[1]+2][2],Q)
-                        P,Q = arcsegcontribution(v,ξ[j],-sgnn[j]*n,sgnh[j]*h,geo[j],0,[0,0],(i-1)*ΔR,UB)
-                        allint[i-ringtot[1]+2][1] = add(allint[i-ringtot[1]+2][1],P)
-                        allint[i-ringtot[1]+2][2] = add(allint[i-ringtot[1]+2][2],Q)
+                print(" sono nei ring totali ")
+                        v=vertices[j]
+                        indx=i-ringtot[1]+1 
+                        print(" ",i," ",h)
+                        P, Q = TimeDomainBEMInt.arcsegcontribution(v,ξ[j],sgnn[j]*n,sgnh[j]*h,geo[j],0,[0,0],i*ΔR,UB)
+                        P=TimeDomainBEMInt.multiply(P,1/(l12′*l12*norm(hdir)))
+                        Q=TimeDomainBEMInt.multiply(Q,1/(l12′*l12*norm(hdir)))
+
+                        P=TimeDomainBEMInt.add(allint[indx][1],P)
+                        Q=TimeDomainBEMInt.add(allint[indx][2],Q)
+                        allint[indx]=(P,Q)
+                        P, Q = TimeDomainBEMInt.arcsegcontribution(v,ξ[j],-sgnn[j]*n,sgnh[j]*h,geo[j],0,[0,0],(i-1)*ΔR,UB)
+                        P=TimeDomainBEMInt.multiply(P,1/(l12′*l12*norm(hdir)))
+                        Q=TimeDomainBEMInt.multiply(Q,1/(l12′*l12*norm(hdir)))
+                        P=TimeDomainBEMInt.add(allint[indx][1],P)
+                        Q=TimeDomainBEMInt.add(allint[indx][2],Q)
+                        allint[indx]=(P,Q)
             end
+            
             for i in rings[j]
-                
+                print(" sono nei ring locali ")
                     #shall I put some check like i*deltaR > h
-                        P, Q = arcsegcontribution(v,ξ[j],sgnn[j]*n,sgnh[j]*h,geo[j],datarings[j][i-rings[j][1]+2][1],datarings[j][i-rings[j][1]+2][2],i*ΔR,UB) #salviamo 
-                        allint[i-ringtot[1]+2][1] = add(allint[i-ringtot[1]+2][1],P)
-                        allint[i-ringtot[1]+2][2] = add(allint[i-ringtot[1]+2][2],Q)
-                        P, Q = arcsegcontribution(v,ξ[j],-sgnn[j]*n,sgnh[j]*h,geo[j],datarings[j][i-rings[j][1]+1][1],datarings[j][i-rings[j][1]+1][2],(i-1)*ΔR,UB)                 
-                        allint[i-ringtot[1]+2][1] = add(allint[i-ringtot[1]+2][1],P)
-                        allint[i-ringtot[1]+2][2] = add(allint[i-ringtot[1]+2][2],Q)
-            end #probabilmente va bene cosi anche con ceil(int,frac) invece di ceil(int,frac+1)
-            allint[i-ringtot[1]+2][1]=multiply(allint[i-ringtot[1]+2][1],1/(l12′*l12*norm(hdir)))
-            allint[i-ringtot[1]+2][2]=multiply(allint[i-ringtot[1]+2][2],1/(l12′*l12*norm(hdir))) 
+                    v=vertices[j]
+                    indx=i-ringtot[1]+1 #attenzione: il +2 invece di +1 e' perche gli anelli 1D sono sempre uno in piu e il primo indice invece e' sempre (0,[0,0])
+                    indx_rings=i-rings[j][1]+1
+                    #print(" indx_rings= ",indx_rings," indx= ",indx," ringtot=",ringtot," ringsj=",rings[j]," dataringsj=",datarings[j]," ")  
+                    P, Q = TimeDomainBEMInt.arcsegcontribution(v,ξ[j],sgnn[j]*n,sgnh[j]*h,geo[j],datarings[j][indx_rings+1][1],datarings[j][indx_rings+1][2],i*ΔR,UB)  
+                        #allint[indx]=
+                        P=TimeDomainBEMInt.multiply(P,1/(l12′*l12*norm(hdir)))
+                        Q=TimeDomainBEMInt.multiply(Q,1/(l12′*l12*norm(hdir)))
+                        P=TimeDomainBEMInt.add(allint[indx][1],P)
+                        Q=TimeDomainBEMInt.add(allint[indx][2],Q)
+                        allint[indx]=(P,Q)
+                        P, Q = TimeDomainBEMInt.arcsegcontribution(v,ξ[j],-sgnn[j]*n,sgnh[j]*h,geo[j],datarings[j][indx_rings][1],datarings[j][indx_rings][2],(i-1)*ΔR,UB)
+                        P=TimeDomainBEMInt.multiply(P,1/(l12′*l12*norm(hdir)))
+                        Q=TimeDomainBEMInt.multiply(Q,1/(l12′*l12*norm(hdir)))
+                        P=TimeDomainBEMInt.add(allint[indx][1],P)
+                        Q=TimeDomainBEMInt.add(allint[indx][2],Q)
+                        allint[indx]=(P,Q)
+                        
+            end 
+            #probabilmente va bene cosi anche con ceil(int,frac) invece di ceil(int,frac+1)
+            
             #=   for i in (relrings[j][2]+1):ringtot[j][2]
         
                     #shall I put some check like i*deltaR > h
@@ -233,7 +262,5 @@ function intlinelineglobal(a1,a2,b1,b2,geo,rings,datarings,parcontrol,ΔR,UB::Ty
         end
             #I+=(1/abs(r12′[2]*r12[1]))*(3*(temp2^2-temp1^2)*d[1]-2*(temp2^3-temp1^3)*d[2])
     end
-    
     return ringtot,allint #missing buidgrad since it is not yet adapted for int line line ci serve??
 end
-
