@@ -37,6 +37,9 @@ function integrate!(out, op::VIEOperator,
     trial_functions::Space, trial_ptr, trial_chart,
     strat::SauterSchwab3DStrategy)
 
+    local_test_space = refspace(test_functions)
+    local_trial_space = refspace(trial_functions)
+
     test_local_space = refspace(test_functions)
     trial_local_space = refspace(trial_functions)
 
