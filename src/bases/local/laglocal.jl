@@ -425,7 +425,7 @@ function curl_local_matrix(ref::LagrangeRefSpace{T,3,3,10} where {T})
     line2_14 = [-0.4062499999999999, 0.5624999999999999, -0.2812499999999999, 3.8735252642769495e-17, 1.4062499999999998, 1.6874999999999998, 0.28125000000000006, -1.1249999999999998, -2.25, 0.12499999999999983]
     line2_15 = [-0.40624999999999994, 0.84375, -0.84375, 0.40624999999999994, 1.125, -0.0, -1.125, 1.1250000000000004, -1.1250000000000007, 3.725619048495105e-18]
     curl_local=hcat(line2_1,line2_2,line2_3,line2_4,line2_5,line2_6,line2_7,line2_8,line2_9,line2_10,line2_11,line2_12,line2_13,line2_14,line2_15)
-    return curl_local #curl_local'
+    return curl_local'
 end
 
 function curl(ref::LagrangeRefSpace{T,3,3,10} where {T}, sh, el)
