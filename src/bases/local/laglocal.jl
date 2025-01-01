@@ -431,7 +431,7 @@ end
 function curl(ref::LagrangeRefSpace{T,3,3,10} where {T}, sh, el)
     #curl of lagc0d3 as combination of gwp order 2 functions 
 
-    curl_matrix=curl_local_matrix(LagrangeRefSpace{T,3,3,10} where {T})
+    curl_matrix=curl_local_matrix(ref)#LagrangeRefSpace{T,3,3,10} where {T})
     
     sh_vec=Vector{typeof(sh)}(undef,15)
 
