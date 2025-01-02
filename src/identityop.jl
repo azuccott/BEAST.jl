@@ -162,7 +162,7 @@ end
 #end
 
 
-const NonLinearRefSpaceTriangle = Union{RTRefSpace, NDRefSpace, GWPDivRefSpace,GWPCurlRefSpace}#actually mixed linear and non
+const NonLinearRefSpaceTriangle = Union{NDRefSpace, GWPDivRefSpace,GWPCurlRefSpace}#actually mixed linear and non
 
 function quaddata(op::LocalOperator, g::NonLinearRefSpaceTriangle, f::NonLinearRefSpaceTriangle,
     tels::Vector, bels::Vector,
