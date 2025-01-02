@@ -1047,4 +1047,4 @@ function lagrangec0(mesh::CompScienceMeshes.AbstractMesh{<:Any,3}; order)
     return LagrangeBasis{order,0,localdim}(mesh, fns, pos)
 end
 
-curl(space::LagrangeBasis{3,0}, geo, fns) = GWPDivSpace(geo, fns,2)
+curl(space::LagrangeBasis{3,0}, geo, fns) = GWPDivSpace(geo, fns,Vector{vertextype(geo)}(undef,length(fns)),2) #is it ok to live it undef?
