@@ -128,16 +128,6 @@ function quaddata(op::LocalOperator, g::RTRefSpace, f::GWPCurlRefSpace,
 end
 
 
-function quaddata(op::LocalOperator, g::NonLinearRefSpaceTriangle, f::NonLinearRefSpaceTriangle,
-    tels::Vector, bels::Vector,
-    qs::SingleNumQStrat)
-
-    u, w = trgauss(qs.quad_rule)
-    qd = [(w[i],SVector(u[1,i],u[2,i])) for i in 1:length(w)]
-    A = _alloc_workspace(qd, g, f, tels, bels)
-    return qd, A
-end
-
 
 
 function quadrule(op::LocalOperator, ψ::RefSpace, ϕ::RefSpace, τ, (qd,A), qs::SingleNumQStrat)
