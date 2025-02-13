@@ -127,6 +127,17 @@ function quaddata(op::LocalOperator, g::RTRefSpace, f::GWPCurlRefSpace,
     return qd, A
 end
 
+defaultquadstrat(::LocalOperator, ::RTRefSpace, ::GWPDivRefSpace) = SingleNumQStrat(7)
+function quaddata(op::LocalOperator, g::RTRefSpace, f::GWPDivRefSpace,
+    tels::Vector, bels::Vector,
+    qs::SingleNumQStrat)
+
+    u, w = trgauss(qs.quad_rule)
+    qd = [(w[i],SVector(u[1,i],u[2,i])) for i in 1:length(w)]
+    A = _alloc_workspace(qd, g, f, tels, bels)
+    return qd, A
+end
+
 
 
 
