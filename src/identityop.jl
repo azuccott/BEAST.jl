@@ -1,3 +1,9 @@
+
+"""
+    Identity <: LocalOperator
+
+The identity operator.
+"""
 struct Identity <: LocalOperator
 end
 
@@ -5,6 +11,11 @@ kernelvals(biop::Identity, x) = nothing
 integrand(op::Identity, kernel, x, g, f) = dot(f[1], g[1])
 scalartype(op::Identity) = Union{}
 
+"""
+    NCross <: LocalOperator
+
+The identity operator where the trial function is rotated.
+"""
 struct NCross <: LocalOperator
 end
 
@@ -100,6 +111,45 @@ function quaddata(op::LocalOperator, g::GWPDivRefSpace, f::GWPDivRefSpace,
     A = _alloc_workspace(qd, g, f, tels, bels)
     return qd, A
 end
+
+
+const NonLinearRefSpaceTriangle = Union{NDRefSpace, GWPDivRefSpace,GWPCurlRefSpace}#actually mixed linear and non
+
+defaultquadstrat(::LocalOperator, ::NonLinearRefSpaceTriangle, ::NonLinearRefSpaceTriangle) = SingleNumQStrat(7)
+function quaddata(op::LocalOperator, g::NonLinearRefSpaceTriangle, f::NonLinearRefSpaceTriangle,
+    tels::Vector, bels::Vector,
+    qs::SingleNumQStrat)
+
+    u, w = trgauss(qs.quad_rule)
+    qd = [(w[i],SVector(u[1,i],u[2,i])) for i in 1:length(w)]
+    A = _alloc_workspace(qd, g, f, tels, bels)
+    return qd, A
+end
+
+
+defaultquadstrat(::LocalOperator, ::RTRefSpace, ::GWPCurlRefSpace) = SingleNumQStrat(7)
+function quaddata(op::LocalOperator, g::RTRefSpace, f::GWPCurlRefSpace,
+    tels::Vector, bels::Vector,
+    qs::SingleNumQStrat)
+
+    u, w = trgauss(qs.quad_rule)
+    qd = [(w[i],SVector(u[1,i],u[2,i])) for i in 1:length(w)]
+    A = _alloc_workspace(qd, g, f, tels, bels)
+    return qd, A
+end
+
+defaultquadstrat(::LocalOperator, ::RTRefSpace, ::GWPDivRefSpace) = SingleNumQStrat(7)
+function quaddata(op::LocalOperator, g::RTRefSpace, f::GWPDivRefSpace,
+    tels::Vector, bels::Vector,
+    qs::SingleNumQStrat)
+
+    u, w = trgauss(qs.quad_rule)
+    qd = [(w[i],SVector(u[1,i],u[2,i])) for i in 1:length(w)]
+    A = _alloc_workspace(qd, g, f, tels, bels)
+    return qd, A
+end
+
+
 
 
 function quadrule(op::LocalOperator, ψ::RefSpace, ϕ::RefSpace, τ, (qd,A), qs::SingleNumQStrat)

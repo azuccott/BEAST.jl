@@ -12,6 +12,9 @@ numfunctions(s::LagrangeRefSpace{T,Dg}, ch::CompScienceMeshes.ReferenceSimplex{D
 # valuetype(ref::LagrangeRefSpace{T}, charttype) where {T} =
 #         SVector{numfunctions(ref), Tuple{T,T}}
 valuetype(ref::LagrangeRefSpace{T}, charttype) where {T} = T
+# valuetype(ref::LagrangeRefSpace{T}, charttype) where {T} =
+#         SVector{numfunctions(ref), Tuple{T,T}}
+valuetype(ref::LagrangeRefSpace{T}, charttype) where {T} = T
 
 # Evaluate constant lagrange elements on anything
 (ϕ::LagrangeRefSpace{T,0})(tp) where {T} = SVector(((value=one(T), derivative=zero(T)),))
@@ -188,22 +191,22 @@ function (f::LagrangeRefSpace{T,2,3})(t) where T
 end
 
 
-function curl(ref::LagrangeRefSpace{T,2,3} where {T}, sh, el)
+#function curl(ref::LagrangeRefSpace{T,2,3} where {T}, sh, el)
     #curl of lagc0d2 as combination of bdm functions 
-    z=zero(typeof(sh.coeff))
-    if sh.refid < 4
-        sh1 = Shape(sh.cellid, mod1(2*sh.refid+1,6), +sh.coeff)
-        sh2 = Shape(sh.cellid, mod1(2*sh.refid+2,6), -3*sh.coeff)
-        sh3 = Shape(sh.cellid, mod1(2*sh.refid+3,6), +3*sh.coeff)
-        sh4 = Shape(sh.cellid, mod1(2*sh.refid+4,6), -sh.coeff)
-    else
-        sh1 = Shape(sh.cellid, mod1(2*sh.refid+4,6), z*sh.coeff)
-        sh2 = Shape(sh.cellid, mod1(2*sh.refid+5,6), -4*sh.coeff)
-        sh3 = Shape(sh.cellid, mod1(2*sh.refid+6,6), +4*sh.coeff)
-        sh4 = Shape(sh.cellid, mod1(2*sh.refid+7,6), z*sh.coeff)
-    end
-    return [sh1, sh2, sh3, sh4]
-end
+ #   z=zero(typeof(sh.coeff))
+  #  if sh.refid < 4
+   #     sh1 = Shape(sh.cellid, mod1(2*sh.refid+1,6), +sh.coeff)
+    #    sh2 = Shape(sh.cellid, mod1(2*sh.refid+2,6), -3*sh.coeff)
+     #   sh3 = Shape(sh.cellid, mod1(2*sh.refid+3,6), +3*sh.coeff)
+      #  sh4 = Shape(sh.cellid, mod1(2*sh.refid+4,6), -sh.coeff)
+    #else
+     #   sh1 = Shape(sh.cellid, mod1(2*sh.refid+4,6), z*sh.coeff)
+      #  sh2 = Shape(sh.cellid, mod1(2*sh.refid+5,6), -4*sh.coeff)
+       # sh3 = Shape(sh.cellid, mod1(2*sh.refid+6,6), +4*sh.coeff)
+        #sh4 = Shape(sh.cellid, mod1(2*sh.refid+7,6), z*sh.coeff)
+    #end
+  #  return [sh1, sh2, sh3, sh4]
+#end
 
 
 const _vert_perms_lag = [
@@ -406,9 +409,36 @@ function interpolate(fields, interpolant::LagrangeRefSpace{T,Degree,3}, chart) w
     return Q
 end
 
+function curl_local_matrix(ref::LagrangeRefSpace{T,2,3} where {T}) 
+    line1 = [-2.980495238796084e-17, -0.33333333333333326, 1.666666666666667, -1.3333333333333341, 0.0, -2.980495238796084e-17]
+    line2 = [-2.980495238796084e-17, -1.6666666666666663, 0.3333333333333335, 1.3333333333333328, 0.0, -5.960990477592168e-17]
+    line3 = [0.3333333333333332, 5.164700352369266e-17, -1.6666666666666667, 6.197640422843119e-16, 1.3333333333333333, 1.2911750880923164e-16]
+    line4 = [1.6666666666666667, 5.164700352369266e-17, -0.3333333333333334, 3.0988202114215596e-16, -1.333333333333333, 2.582350176184633e-16]
+    line5 = [-0.3333333333333332, 1.6666666666666665, 4.4549644304876854e-17, 2.375981029593432e-16, -5.494456130934811e-16, -1.3333333333333333]
+    line6 = [-1.6666666666666665, 0.3333333333333332, 2.2274822152438427e-17, 1.187990514796716e-16, -4.454964430487685e-16, 1.3333333333333333]
+    line7 = [0.3333333333333332, 3.227937720230791e-17, -0.3333333333333337, -1.3333333333333328, 4.648230317132339e-16, 1.333333333333333]
+    line8 = [7.45123809699021e-18, 0.33333333333333326, -0.3333333333333337, 3.576594286555301e-16, -1.3333333333333333, 1.3333333333333333]
+    curl_local=hcat(line1,line2,line3,line4,line5,line6,line7,line8)
+     return curl_local'
+end
 
 
-function curl_local_matrix(ref::LagrangeRefSpace{T,3,3} where {T}) 
+function curl(ref::LagrangeRefSpace{T,2,3} where {T}, sh, el)
+    #curl of lagc0d2 as combination of gwp order 1 functions 
+
+    curl_matrix=curl_local_matrix(ref)#LagrangeRefSpace{T,2,3} where {T})
+    
+    sh_vec=Vector{typeof(sh)}(undef,8)
+
+    for i in 1:8
+        sh_vec[i]=Shape(sh.cellid, i, curl_matrix[i,sh.refid])
+    end
+
+    return sh_vec
+end
+
+
+function curl_local_matrix(ref::LagrangeRefSpace{T,3,3,10} where {T}) 
     line2_1 = [-1.8437499999999996, 0.28125000000000056, 1.9687499999999998, -0.40624999999999994, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     line2_2 = [0.12499999999999983, -3.375, 3.374999999999999, -0.12499999999999983, -2.980495238796084e-17, 0.0, -2.980495238796084e-17, 0.0, 0.0, 0.0]
     line2_3 = [0.40624999999999994, -1.9687499999999998, -0.28125000000000044, 1.84375, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
@@ -425,13 +455,13 @@ function curl_local_matrix(ref::LagrangeRefSpace{T,3,3} where {T})
     line2_14 = [-0.4062499999999999, 0.5624999999999999, -0.2812499999999999, 3.8735252642769495e-17, 1.4062499999999998, 1.6874999999999998, 0.28125000000000006, -1.1249999999999998, -2.25, 0.12499999999999983]
     line2_15 = [-0.40624999999999994, 0.84375, -0.84375, 0.40624999999999994, 1.125, -0.0, -1.125, 1.1250000000000004, -1.1250000000000007, 3.725619048495105e-18]
     curl_local=hcat(line2_1,line2_2,line2_3,line2_4,line2_5,line2_6,line2_7,line2_8,line2_9,line2_10,line2_11,line2_12,line2_13,line2_14,line2_15)
-    return curl_local #curl_local'
+    return curl_local'
 end
 
-function curl(ref::LagrangeRefSpace{T,3,3} where {T}, sh, el)
+function curl(ref::LagrangeRefSpace{T,3,3,10} where {T}, sh, el)
     #curl of lagc0d3 as combination of gwp order 2 functions 
 
-    curl_matrix=curl_local_matrix(LagrangeRefSpace{T,3,3,10})
+    curl_matrix=curl_local_matrix(ref)#LagrangeRefSpace{T,3,3,10} where {T})
     
     sh_vec=Vector{typeof(sh)}(undef,15)
 
@@ -441,3 +471,4 @@ function curl(ref::LagrangeRefSpace{T,3,3} where {T}, sh, el)
 
     return sh_vec
 end
+

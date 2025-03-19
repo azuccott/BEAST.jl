@@ -192,6 +192,7 @@ include("bases/tensorbasis.jl")
 
 include("operator.jl")
 
+include("quadrature/strategies/quadstrat.jl")
 include("quadrature/quadstrats.jl")
 include("quadrature/doublenumqstrat.jl")
 include("quadrature/doublenumsauterqstrat.jl")
@@ -273,7 +274,6 @@ include("decoupled/potentials.jl")
 include("helmholtz3d/timedomain/tdhh3dops.jl")
 include("helmholtz3d/timedomain/tdhh3dexc.jl")
 include("helmholtz3d/timedomain/tdhh3dpp.jl")
-
 include("maxwell/timedomain/acustictdops.jl")#support for acusticsinglelayer
 include("maxwell/timedomain/mwtdops.jl")
 include("maxwell/timedomain/mwtdexc.jl")
