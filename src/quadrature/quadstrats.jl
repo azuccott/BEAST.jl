@@ -18,6 +18,14 @@ struct OuterNumInnerAnalyticQStrat{R} <: AbstractQuadStrat
     outer_rule::R
 end
 
+struct AllAnalyticalQStrat{R}
+    rule::R
+end
+
+struct AllAnalyticalBottomUpQStrat{R}
+    rule::R
+end
+
 
 defaultquadstrat(op, tfs, bfs) = defaultquadstrat(op, refspace(tfs), refspace(bfs))
 macro defaultquadstrat(dop, body)

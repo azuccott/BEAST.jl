@@ -250,10 +250,11 @@ function assemble_chunk!(op::RetardedPotential, testST, trialST, store;
     V = refspace(trialspace)
     W = refspace(timebasisfunction)
 
-    qd = quaddata(op, U, V, W, testels, trialels, nothing, quadstrat)
-
+    
     ugeo = geometry(testspace)
     vgeo = geometry(trialspace)
+
+    qd = quaddata(op, ugeo, vgeo, U, V, W, testels, trialels, nothing, quadstrat,ΔR)
 
     udim = numfunctions(U, domain(chart(ugeo, first(ugeo))))
     vdim = numfunctions(V, domain(chart(vgeo, first(vgeo))))

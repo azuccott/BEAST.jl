@@ -3,11 +3,15 @@ abstract type HH3DTDBIO{T} <: RetardedPotential{T} end
 struct HH3DSingleLayerTDBIO{T} <: HH3DTDBIO{T}
     "speed of light"
     speed_of_light::T
+    "weight"
+    weight::T
     "number of temporal differentiations"
     num_diffs::Int
 end
 
-HH3DSingleLayerTDBIO(c) = HH3DSingleLayerTDBIO(c, 0)
+HH3DSingleLayerTDBIO(c) = HH3DSingleLayerTDBIO(c, one(c) ,0)
+
+
 
 struct HH3DHyperSingularTDBIO{T} <: HH3DTDBIO{T}
     speed_of_light::T
@@ -28,15 +32,23 @@ struct HH3DDoubleLayerTDBIO{T} <: HH3DTDBIO{T}
     num_diffs::Int
 end
 
+function Base.:*(a::Number, op::HH3DSingleLayerTDBIO)
+	@info "scalar product a * op (HH3DSingleLayerTDBIO)"
+	HH3DSingleLayerTDBIO(
+		op.speed_of_light,
+		a * op.weight,
+		op.num_diffs)
+end
+
 HH3DDoubleLayerTDBIO(;speed_of_light) = HH3DDoubleLayerTDBIO(speed_of_light,one(speed_of_light),0)
 
 
 defaultquadstrat(::HH3DTDBIO, tfs, bfs) = nothing
 
 # See: ?BEAST.quaddata for help
-function quaddata(operator::HH3DTDBIO,
+function quaddata(operator::HH3DTDBIO, ugeo, vgeo,
         test_local_space, trial_local_space, time_local_space,
-        test_element, trial_element, time_element, quadstrat::Nothing)
+        test_element, trial_element, time_element, quadstrat::Nothing,ΔR)
 
     dmax = numfunctions(time_local_space)-1
     bn = binomial.((0:dmax),(0:dmax)')

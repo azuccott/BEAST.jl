@@ -1,8 +1,12 @@
 using CompScienceMeshes, BEAST, LinearAlgebra
 #Γ = readmesh(joinpath(@__DIR__,"sphere2.in"))
-Γ = CompScienceMeshes.meshsphere(1.0,0.4)#CompScienceMeshes.meshcuboid(1.0,1.0,1.0,0.3)
+#CompScienceMeshes.meshsphere(1.0,0.4)
+
+Γ = CompScienceMeshes.meshcuboid(1.0,1.0,1.0,0.3)
 
 X = lagrangecxd0(Γ)
+
+numfunctions(X)
 
 Δt, Nt = 0.5, 200 
 T = timebasisshiftedlagrange(Δt, Nt, 0)
@@ -11,6 +15,8 @@ U = timebasisdelta(Δt, Nt)
 V = X ⊗ T
 W = X ⊗ U
 
+
+assemble(e,W)
 width, delay, scaling = 16.0, 24.0, 1.0
 gaussian = creategaussian(width, delay, scaling)
 e = BEAST.planewave(point(0,0,1), 1.0, gaussian)
@@ -19,10 +25,13 @@ e = BEAST.planewave(point(0,0,1), 1.0, gaussian)
 @hilbertspace j′
 
 SL = TDAcustic3D.acusticsinglelayer(speedofsound=1.0, numdiffs=0)
-# BEAST.@defaultquadstrat (SL, W, V) BEAST.OuterNumInnerAnalyticQStrat(7)
+BEAST.@defaultquadstrat (SL, W, V) nothing #BEAST.AllAnalyticalQStrat
+#BEAST.OuterNumInnerAnalyticQStrat(7)
 
 tdacusticsl = @discretise SL[j′,j] == -1.0e[j′]   j∈V  j′∈W
 xacusticsl = solve(tdacusticsl)
+
+
 
 Z = assemble(SL,W,V)
 

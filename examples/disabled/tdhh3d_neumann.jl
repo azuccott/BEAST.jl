@@ -42,10 +42,17 @@ Z0d = assemble(D,       X ⊗ P, X ⊗ P)
 Zd = Z0d + (-0.5)*Z1d
 u = marchonintime(inv(Zd[:,:,1]), Zd, bd, Nt)
 
+X ⊗ δ
 bs = assemble(e, X ⊗ δ)
 Zs = assemble(S, X ⊗ δ, X ⊗ P)
 v = marchonintime(inv(Zs[:,:,1]), Zs, -bs, Nt)
 
+@hilbertspace j
+@hilbertspace j′
+
+
+tdacusticsl = @discretise S[j′,j] == -1.0e[j′]   j∈ (X ⊗ P)  j′∈ (X ⊗ δ)
+xacusticsl = solve(tdacusticsl)
 
 tdacusticsl = @discretise D[j′,j] == 1.0(n⋅h)[j′]   j∈ (X ⊗ P)  j′∈ (X ⊗ δ)
 xacusticsl = solve(tdacusticsl)

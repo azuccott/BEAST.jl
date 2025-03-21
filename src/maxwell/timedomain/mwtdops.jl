@@ -76,8 +76,8 @@ export TDMaxwell3D
 
 defaultquadstrat(::MWSingleLayerTDIO, tfs, bfs) = OuterNumInnerAnalyticQStrat(3)
 
-function quaddata(op::MWSingleLayerTDIO, testrefs, trialrefs, timerefs,
-        testels, trialels, timeels, quadstrat::OuterNumInnerAnalyticQStrat)
+function quaddata(op::MWSingleLayerTDIO, ugeo, vgeo, testrefs, trialrefs, timerefs,
+        testels, trialels, timeels, quadstrat::OuterNumInnerAnalyticQStrat,ΔR)
 
     dmax = numfunctions(timerefs)-1
     bn = binomial.((0:dmax),(0:dmax)')
@@ -132,8 +132,8 @@ end
 
 defaultquadstrat(::MWDoubleLayerTDIO, tfs, bfs) = OuterNumInnerAnalyticQStrat(3)
 
-function quaddata(op::MWDoubleLayerTDIO, testrefs, trialrefs, timerefs,
-        testels, trialels, timeels, quadstrat::OuterNumInnerAnalyticQStrat)
+function quaddata(op::MWDoubleLayerTDIO, ugeo, vgeo ,testrefs, trialrefs, timerefs,
+        testels, trialels, timeels, quadstrat::OuterNumInnerAnalyticQStrat,ΔR)
 
     dmax = numfunctions(timerefs)-1
     bn = binomial.((0:dmax),(0:dmax)')
@@ -151,9 +151,9 @@ quadrule(op::MWDoubleLayerTDIO, testrefs, trialrefs, timerefs,
 
 defaultquadstrat(::MWDoubleLayerTransposedTDIO, tfs, bfs) = OuterNumInnerAnalyticQStrat(3)
 
-function quaddata(op::MWDoubleLayerTransposedTDIO,
+function quaddata(op::MWDoubleLayerTransposedTDIO, ugeo, vgeo,
 		testrefs, trialrefs, timerefs,
-        testels, trialels, timeels, quadstrat::OuterNumInnerAnalyticQStrat)
+        testels, trialels, timeels, quadstrat::OuterNumInnerAnalyticQStrat,ΔR)
 
     dmax = numfunctions(timerefs)-1
     bn = binomial.((0:dmax),(0:dmax)')

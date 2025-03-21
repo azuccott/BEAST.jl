@@ -35,19 +35,40 @@ defaultquadstrat(::AcusticSingleLayerTDIO, tfs, bfs) = AllAnalyticalQStrat(1) #n
 #nothing goes in hybrid qr, allanalytical goes in zuccottirule
 
 
-function quaddata(op::AcusticSingleLayerTDIO, testrefs, trialrefs, timerefs,
-     testels, trialels, timeels, quadstrat::AllAnalyticalQStrat)    
-    return nothing
+function quaddata(op::AcusticSingleLayerTDIO, ugeo, vgeo ,testrefs, trialrefs, timerefs,
+     testels, trialels, timeels, quadstrat::AllAnalyticalQStrat,ΔR)    
+    return nothing #il caz nothing
 end
+
+function quaddata(op::AcusticSingleLayerTDIO, ugeo, vgeo ,testrefs, trialrefs, timerefs,
+    testels, trialels, timeels, quadstrat::AllAnalyticalBottomUpQStrat,ΔR)    
+
+    edges=skeleton(ugeo,1)
+    vertices=skeleton(ugeo,0)
+    ch_edges=[chart(edges,i) for i in 1:length(edges)]
+    ch_nodes=[chart(nodes,i)[1] for i in 1:length(nodes)]
+    ch_faces=trialels #[chart(Γ,i) for i in 1:length(Γ)]
+
+
+    connct_nd_edg=connectivity(edges,vertices)
+    connct_edg_face=connectivity(faces,edges)
+    connect1,connect2=connct_nd_edg,connct_edg_face
+
+
+
+    return TimeDomainBEMInt.quaddata_bottomup_allconst(vertices,edges,faces,connect1,connect2,ΔR)
+
+end
+
 
 quadrule(op::AcusticSingleLayerTDIO, testrefs, trialrefs, timerefs,
         p, testel, q, trialel, r, timeel, qd, ::AllAnalyticalQStrat) = ZuccottiRule(1.0)
     
 
 
-function quaddata(operator::AcusticSingleLayerTDIO,
+function quaddata(operator::AcusticSingleLayerTDIO, ugeo, vgeo,
             test_local_space, trial_local_space, time_local_space,
-            test_element, trial_element, time_element, quadstrat::Nothing)
+            test_element, trial_element, time_element, quadstrat::Nothing,ΔR)
     
         dmax = numfunctions(time_local_space)-1
         bn = binomial.((0:dmax),(0:dmax)')
