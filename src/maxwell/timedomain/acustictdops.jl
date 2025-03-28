@@ -31,13 +31,14 @@ end #of the module
 
 export TDAcustic3D
 
-defaultquadstrat(::AcusticSingleLayerTDIO, tfs, bfs) = AllAnalyticalQStrat(1) #nothing
+defaultquadstrat(::AcusticSingleLayerTDIO, tfs, bfs) = AllAnalyticalBottomUpQStrat(1)
+ #AllAnalyticalQStrat(1) #nothing
 #nothing goes in hybrid qr, allanalytical goes in zuccottirule
 
 
 function quaddata(op::AcusticSingleLayerTDIO, ugeo, vgeo ,testrefs, trialrefs, timerefs,
      testels, trialels, timeels, quadstrat::AllAnalyticalQStrat,ΔR)    
-    return nothing #il caz nothing
+    return nothing
 end
 
 function quaddata(op::AcusticSingleLayerTDIO, ugeo, vgeo ,testrefs, trialrefs, timerefs,
@@ -46,17 +47,16 @@ function quaddata(op::AcusticSingleLayerTDIO, ugeo, vgeo ,testrefs, trialrefs, t
     edges=skeleton(ugeo,1)
     vertices=skeleton(ugeo,0)
     ch_edges=[chart(edges,i) for i in 1:length(edges)]
-    ch_nodes=[chart(nodes,i)[1] for i in 1:length(nodes)]
-    ch_faces=trialels #[chart(Γ,i) for i in 1:length(Γ)]
+    ch_nodes=[chart(vertices,i)[1] for i in 1:length(vertices)]
+    ch_faces=[chart(ugeo,i) for i in 1:length(ugeo)]#trialels
 
 
     connct_nd_edg=connectivity(edges,vertices)
-    connct_edg_face=connectivity(faces,edges)
-    connect1,connect2=connct_nd_edg,connct_edg_face
+    connct_edg_face=connectivity(ugeo,edges,identity)
+    connct_nd_face=connectivity(ugeo,vertices,identity)
+    connect1,connect2,connect3=connct_nd_edg,connct_edg_face,connct_nd_face
 
-
-
-    return TimeDomainBEMInt.quaddata_bottomup_allconst(vertices,edges,faces,connect1,connect2,ΔR)
+    return (TimeDomainBEMInt.quaddata_bottomup_allconst(ch_nodes,ch_edges,ch_faces,connect1,connect2,connect3,ΔR),ΔR)
 
 end
 
@@ -81,7 +81,30 @@ function quaddata(operator::AcusticSingleLayerTDIO, ugeo, vgeo,
     
     end
     
-    
+    function quadrule(operator::AcusticSingleLayerTDIO,
+        test_local_space, trial_local_space, time_local_space,
+        p, test_element, q, trial_element, r, time_element,
+        quad_data, quadstrat::AllAnalyticalBottomUpQStrat)
+
+        # WiltonInts84Strat(quad_data[1,p])
+        qd4D=quad_data[1]
+        ΔR=quad_data[2]
+        
+        r0=qd4D[1][p,q][1]
+        indx=r-r0+1
+        
+        #print("\n ring_kristof= ",rings(test_element,trial_element,ΔR)," ring_miei = ",qd4D[1][p,q]," element=",[p,q])
+
+        #@assert rings(test_element,trial_element,ΔR)==qd4D[1][p,q][1]:qd4D[1][p,q][end]+1
+
+        qd_val = qd4D[2][p,q][indx]
+        ZuccottiBottomUpRule(qd_val)
+    end
+
+    struct ZuccottiBottomUpRule{T}
+        Val::T #Allanalyticalformula ZuccottiBottomUpRule
+    end
+
     # See: ?BEAST.quadrule for help
     function quadrule(operator::AcusticSingleLayerTDIO,
             test_local_space, trial_local_space, time_local_space,
@@ -91,7 +114,6 @@ function quaddata(operator::AcusticSingleLayerTDIO, ugeo, vgeo,
         # WiltonInts84Strat(quad_data[1,p])
         qd = quad_data
         HybridZuccottiWiltonStrat(qd[1][1,p],qd[2],qd[3])
-    
     end
     
     
@@ -151,6 +173,10 @@ qpclinetriang=10^10
 qpctriangtriang=10^13  
 
 const qpc=[qpclineline, qpclinetriang, qpctriangtriang] 
+
+function momintegrals!(z, op::AcusticSingleLayerTDIO, g::LagrangeRefSpace{T,0,3}, f::LagrangeRefSpace{T,0,3}, t::MonomialBasis{T,0,1}, τ, σ, ι, qr::ZuccottiBottomUpRule) where T
+    z[1,1,1]+=qr.Val
+end
 
 function momintegrals!(z, op::AcusticSingleLayerTDIO, g::LagrangeRefSpace{T,0,3}, f::LagrangeRefSpace{T,0,3}, t::MonomialBasis{T,0,1}, τ, σ, ι, qr::ZuccottiRule) where T
         
