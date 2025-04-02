@@ -17,6 +17,7 @@ scalartype(p::PlaneWaveHH3DTD) = scalartype(p.amplitude)
 
 function(f::PlaneWaveHH3DTD)(r,t)
     k = f.direction
+    r = cartesian(r)
     u = sum(k[i]*r[i] for i in 1:length(k))
     #u = dot(f.direction, r)
     a = f.amplitude

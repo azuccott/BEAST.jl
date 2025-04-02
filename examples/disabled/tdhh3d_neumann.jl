@@ -3,7 +3,7 @@ using BEAST
 using LinearAlgebra
 
 #G = meshsphere(1.0, 0.30)
-G = CompScienceMeshes.meshmobius(h=0.2)
+G = CompScienceMeshes.meshcuboid(1.0,1.0,1.0,0.5)
 
 c = 1.0
 S = BEAST.HH3DSingleLayerTDBIO(c)
@@ -11,7 +11,7 @@ D = BEAST.HH3DDoubleLayerTDBIO(speed_of_light=c)
 Id = BEAST.Identity()
 
 # width, delay, scaling = 24.0, 36.0, 1.0
-width, delay, scaling = 16.0, 24.0, 1.0
+width, delay, scaling = 0.16, 24.0, 1.0*0.16/8
 gaussian = creategaussian(width, delay, scaling)
 fgaussian = fouriertransform(gaussian)
 e = BEAST.planewave(point(0,0,1), c, gaussian)
@@ -28,7 +28,8 @@ numfunctions(X)
 
 # Δt, Nt = 0.9032321, 301
 # Δt, Nt = 1.2032321, 301
-Δt, Nt = 0.16, 300
+#Δt, Nt = 0.16, 300
+Δt, Nt = 0.1039049*0.25, 1400
 # T = timebasisc0d1(Δt, Nt)
 P = timebasiscxd0(Δt, Nt)
 #H = timebasisc0d1(Δt, Nt)
@@ -36,30 +37,46 @@ P = timebasiscxd0(Δt, Nt)
 
 # assemble the right hand side
 
-bd  = assemble(n⋅h,     X ⊗ P)
-Z1d = assemble(Id ⊗ Id, X ⊗ P, X ⊗ P)
-Z0d = assemble(D,       X ⊗ P, X ⊗ P)
-Zd = Z0d + (-0.5)*Z1d
-u = marchonintime(inv(Zd[:,:,1]), Zd, bd, Nt)
+#bd  = assemble(n⋅h,     X ⊗ P)
+#Z1d = assemble(Id ⊗ Id, X ⊗ P, X ⊗ P)
+#Z0d = assemble(D,       X ⊗ P, X ⊗ P)
+#Zd = Z0d + (-0.5)*Z1d
+#u = marchonintime(inv(Zd[:,:,1]), Zd, bd, Nt)
 
-X ⊗ δ
-bs = assemble(e, X ⊗ δ)
-Zs = assemble(S, X ⊗ δ, X ⊗ P)
-v = marchonintime(inv(Zs[:,:,1]), Zs, -bs, Nt)
+#x = Double64("1.00000000000001")   # Direct Float128 representation
+#y = Double64("1.00000000000000")
+
+#diff_good = x - y  # Benefits from extended precision
+
+
+
+#X ⊗ δ
+#bs = assemble(e, X ⊗ δ)
+@time Zs = assemble(S, X ⊗ δ, X ⊗ P)
+
+#v = marchonintime(inv(Zs[:,:,1]), Zs, -bs, Nt)
 
 @hilbertspace j
 @hilbertspace j′
 
 
-tdacusticsl = @discretise S[j′,j] == -1.0e[j′]   j∈ (X ⊗ P)  j′∈ (X ⊗ δ)
-xacusticsl = solve(tdacusticsl)
+tdhhsl = @discretise S[j′,j] == -1.0e[j′]   j∈ (X ⊗ P)  j′∈ (X ⊗ δ)
+xtdhhsl = solve(tdhhsl)
 
-tdacusticsl = @discretise D[j′,j] == 1.0(n⋅h)[j′]   j∈ (X ⊗ P)  j′∈ (X ⊗ δ)
-xacusticsl = solve(tdacusticsl)
+import BEAST.ConvolutionOperators
+pvals=ConvolutionOperators.polyvals(Zs)
 
+    for i in 1:size(pvals,1)
+        if (norm(pvals[i]))> 1.0
+            println("pvals[$i] = $(pvals[i])")
+        end
+    end
+period=2*π/(2*π+angle(pvals[2437]))
+
+period2= 2*π/angle(pvals[2438])
 
 import Plots
-Plots.plot(xacusticsl[1000,2900:3000])
+Plots.plot(xtdhhsl[1,:],label="Current_numerical")
 
 U, Δω, ω0 = fouriertransform(u, Δt, 0.0, 2)
 V, Δω, ω0 = fouriertransform(v, Δt, 0.0, 2)

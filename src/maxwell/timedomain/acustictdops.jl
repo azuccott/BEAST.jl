@@ -175,7 +175,7 @@ qpctriangtriang=10^13
 const qpc=[qpclineline, qpclinetriang, qpctriangtriang] 
 
 function momintegrals!(z, op::AcusticSingleLayerTDIO, g::LagrangeRefSpace{T,0,3}, f::LagrangeRefSpace{T,0,3}, t::MonomialBasis{T,0,1}, τ, σ, ι, qr::ZuccottiBottomUpRule) where T
-    z[1,1,1]+=qr.Val
+    z[1,1,1]+=(4*volume(σ)*volume(τ))*qr.Val/(4*π)
 end
 
 function momintegrals!(z, op::AcusticSingleLayerTDIO, g::LagrangeRefSpace{T,0,3}, f::LagrangeRefSpace{T,0,3}, t::MonomialBasis{T,0,1}, τ, σ, ι, qr::ZuccottiRule) where T
