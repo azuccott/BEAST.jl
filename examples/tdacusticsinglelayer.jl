@@ -2,21 +2,23 @@ using CompScienceMeshes, BEAST, LinearAlgebra
 #Γ = readmesh(joinpath(@__DIR__,"sphere2.in"))
 #CompScienceMeshes.meshsphere(1.0,0.4)
 
-Γ = CompScienceMeshes.meshcuboid(1.0,1.0,1.0,0.5)
+Γ = CompScienceMeshes.meshcuboid(1.0,1.0,1.0,0.5/sqrt(4))
 
 X = lagrangecxd0(Γ)
 
 numfunctions(X)
-
-Δt, Nt = 0.1039049*0.25, 1400
+par=2
+Δt, Nt = 0.1039049/par, 350*par
 T = timebasisshiftedlagrange(Δt, Nt, 0)
+#dT=derive(T)
+
 U = timebasisdelta(Δt, Nt)
 
 V = X ⊗ T
 W = X ⊗ U
 
 
-width, delay, scaling =  0.16, 24.0, 1.0*0.16/8
+width, delay, scaling =  10*Δt, 24.0, 1.0*10*Δt/8
 gaussian = creategaussian(width, delay, scaling)
 e = BEAST.planewave(point(0,0,1), 1.0, gaussian)
 
@@ -31,19 +33,23 @@ tdacusticsl = @discretise SL[j′,j] == -1.0e[j′]   j∈V  j′∈W
 xacusticsl = solve(tdacusticsl)
 
 
-@time Z = assemble(SL,W,V)
+#@time Z = assemble(SL,W,V)
 
 #corregere da qui 
 import Plots
 
 xacusticsl
 
+Plots.plot(xtdhhsl[1,:],label=["Current_wilton_rule4"],xlim=(200*par,350*par))#800,1400
+
+
 Plots.plot(xacusticsl[1,:],label="Current_exact")
 
-Plots.plot([xacusticsl[1,:],xtdhhsl[1,:]],label=["Current_exact" "Current_wilton_rule4"],xlim=(800,1400))
+Plots.plot([xacusticsl[1,:],xtdhhsl[1,:]],label=["Current_exact" "Current_wilton_rule4"],xlim=(200*par,350*par))#800,1400
 
 Plots.xlabel!("t")
-Plots.savefig("stablecurrent.png") 
+Plots.savefig("c:/Users/Administrator/Pictures/Plots_mot/mot_exact_wilton_10.png")
+#Plots.savefig("mot_exact_wilton_4.png") 
 
 xacusticsl[1,200:300]
 

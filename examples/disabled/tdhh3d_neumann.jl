@@ -3,7 +3,7 @@ using BEAST
 using LinearAlgebra
 
 #G = meshsphere(1.0, 0.30)
-G = CompScienceMeshes.meshcuboid(1.0,1.0,1.0,0.5)
+G = CompScienceMeshes.meshcuboid(1.0,1.0,1.0,0.5/sqrt(4))
 
 c = 1.0
 S = BEAST.HH3DSingleLayerTDBIO(c)
@@ -11,7 +11,7 @@ D = BEAST.HH3DDoubleLayerTDBIO(speed_of_light=c)
 Id = BEAST.Identity()
 
 # width, delay, scaling = 24.0, 36.0, 1.0
-width, delay, scaling = 0.16, 24.0, 1.0*0.16/8
+width, delay, scaling = 10*Δt, 24.0, 1.0*10*Δt/8
 gaussian = creategaussian(width, delay, scaling)
 fgaussian = fouriertransform(gaussian)
 e = BEAST.planewave(point(0,0,1), c, gaussian)
@@ -29,10 +29,12 @@ numfunctions(X)
 # Δt, Nt = 0.9032321, 301
 # Δt, Nt = 1.2032321, 301
 #Δt, Nt = 0.16, 300
-Δt, Nt = 0.1039049*0.25, 1400
+par=2
+Δt, Nt = 0.1039049/par, 350*par
 # T = timebasisc0d1(Δt, Nt)
 P = timebasiscxd0(Δt, Nt)
-#H = timebasisc0d1(Δt, Nt)
+H = timebasisc0d0(Δt, Nt)
+#dH=derive(H)
 δ = timebasisdelta(Δt, Nt)
 
 # assemble the right hand side
@@ -63,22 +65,49 @@ P = timebasiscxd0(Δt, Nt)
 tdhhsl = @discretise S[j′,j] == -1.0e[j′]   j∈ (X ⊗ P)  j′∈ (X ⊗ δ)
 xtdhhsl = solve(tdhhsl)
 
-import BEAST.ConvolutionOperators
-pvals=ConvolutionOperators.polyvals(Zs)
 
-    for i in 1:size(pvals,1)
+
+function iterative_polyvals(Z)
+    Q = ConvolutionOperators.materializeconvop(Z)
+    C = ConvolutionOperators.companion(Q)
+    @show size(C)
+    λ, v = eigs(sparse(C); nev=2, which=:LM)
+    return λ, v
+end
+
+using Arpack
+using SparseArrays
+  # Largest Magnitude eigenvalue
+
+
+
+
+
+import BEAST.ConvolutionOperators
+pvals=iterative_polyvals(Zs)
+angle(pvals[2][1])
+abs(pvals[1][1])
+
+
+period=100/(17)*Δt
+omega=2*π/period
+T=1/350
+T/Δt
+
+for i in 1:size(pvals,1)
         if (norm(pvals[i]))> 1.0
             println("pvals[$i] = $(pvals[i])")
         end
     end
-period=2*π/(2*π+angle(pvals[2437]))
-
-period2= 2*π/angle(pvals[2438])
+period=2*π/(2*π+angle(pvals[2][1]))
+ω=2*π/period/Δt
+period2= 2*π/angle(pvals[1][1])
 
 import Plots
 Plots.plot(xtdhhsl[1,:],label="Current_numerical")
 
-U, Δω, ω0 = fouriertransform(u, Δt, 0.0, 2)
+U, Δω, ω0 = fouriertransform(xtdhhsl, Δt, 0.0, 2)
+Plots.plot(abs.(U[1,:]),label="Current_fourier")
 V, Δω, ω0 = fouriertransform(v, Δt, 0.0, 2)
 
 ω = collect(ω0 .+ (0:Nt-1)*Δω)
