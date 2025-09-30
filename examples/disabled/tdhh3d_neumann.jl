@@ -3,15 +3,15 @@ using BEAST
 using LinearAlgebra
 
 #G = meshsphere(1.0, 0.30)
-G = CompScienceMeshes.meshcuboid(1.0,1.0,1.0,0.5/sqrt(4))
+G = CompScienceMeshes.meshcuboid(1.0,1.0,1.0,1.0/6)
 
 c = 1.0
 S = BEAST.HH3DSingleLayerTDBIO(c)
 D = BEAST.HH3DDoubleLayerTDBIO(speed_of_light=c)
 Id = BEAST.Identity()
 
-# width, delay, scaling = 24.0, 36.0, 1.0
-width, delay, scaling = 10*Δt, 24.0, 1.0*10*Δt/8
+width, delay, scaling = 22.24, 36.0, 22.24/8
+#width, delay, scaling = 80*Δt, 24.0, 1.0*80*Δt/8
 gaussian = creategaussian(width, delay, scaling)
 fgaussian = fouriertransform(gaussian)
 e = BEAST.planewave(point(0,0,1), c, gaussian)
@@ -30,7 +30,7 @@ numfunctions(X)
 # Δt, Nt = 1.2032321, 301
 #Δt, Nt = 0.16, 300
 par=2
-Δt, Nt = 0.1039049/par, 350*par
+Δt, Nt = 0.1039049/par, 700*par
 # T = timebasisc0d1(Δt, Nt)
 P = timebasiscxd0(Δt, Nt)
 H = timebasisc0d0(Δt, Nt)
@@ -64,7 +64,7 @@ H = timebasisc0d0(Δt, Nt)
 
 tdhhsl = @discretise S[j′,j] == -1.0e[j′]   j∈ (X ⊗ P)  j′∈ (X ⊗ δ)
 xtdhhsl = solve(tdhhsl)
-
+xtdhhsl
 
 
 function iterative_polyvals(Z)
@@ -85,7 +85,7 @@ using SparseArrays
 
 import BEAST.ConvolutionOperators
 pvals=iterative_polyvals(Zs)
-angle(pvals[2][1])
+angle(pvals[1][1])
 abs(pvals[1][1])
 
 

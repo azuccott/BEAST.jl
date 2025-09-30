@@ -2,11 +2,15 @@ using CompScienceMeshes, BEAST, LinearAlgebra
 #Γ = readmesh(joinpath(@__DIR__,"sphere2.in"))
 #CompScienceMeshes.meshsphere(1.0,0.4)
 
-Γ = CompScienceMeshes.meshcuboid(1.0,1.0,1.0,0.5/sqrt(4))
+Γ = CompScienceMeshes.meshcuboid(1.0,1.0,1.0,1.0/6)
 
 X = lagrangecxd0(Γ)
 
-numfunctions(X)
+vec1=zeros(numfunctions(X))
+vec1[200]=1.0
+vec1[300]=1.0
+
+
 par=2
 Δt, Nt = 0.1039049/par, 350*par
 T = timebasisshiftedlagrange(Δt, Nt, 0)
@@ -18,7 +22,7 @@ V = X ⊗ T
 W = X ⊗ U
 
 
-width, delay, scaling =  10*Δt, 24.0, 1.0*10*Δt/8
+width, delay, scaling =  80*Δt, 24.0, 1.0*80*Δt/8
 gaussian = creategaussian(width, delay, scaling)
 e = BEAST.planewave(point(0,0,1), 1.0, gaussian)
 
@@ -40,18 +44,18 @@ import Plots
 
 xacusticsl
 
-Plots.plot(xtdhhsl[1,:],label=["Current_wilton_rule4"],xlim=(200*par,350*par))#800,1400
+Plots.plot(xtdhhsl[1,:],label=["Current_wilton_rule2"])#800,1400
 
 
 Plots.plot(xacusticsl[1,:],label="Current_exact")
 
-Plots.plot([xacusticsl[1,:],xtdhhsl[1,:]],label=["Current_exact" "Current_wilton_rule4"],xlim=(200*par,350*par))#800,1400
+Plots.plot([xacusticsl[1,:],xtdhhsl[1,:]],label=["Solution_exact" "Solution_semi-analytical"],xlim=(200*par,300*par))#800,1400
 
 Plots.xlabel!("t")
-Plots.savefig("c:/Users/Administrator/Pictures/Plots_mot/mot_exact_wilton_10.png")
+Plots.savefig("c:/Users/Administrator/Pictures/Plots_mot/new_mot_exact_vs_wilton_7.png")
 #Plots.savefig("mot_exact_wilton_4.png") 
 
-xacusticsl[1,200:300]
+xacusticsl
 
 pval=ConvolutionOperators.polyvals(Z)
 findmax(norm(pval[i]) for i in 1:size(pval,1))
