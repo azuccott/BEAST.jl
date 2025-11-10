@@ -188,7 +188,7 @@ function (f::LagrangeRefSpace{T,2,3})(t) where T
 end
 
 
-function curl(ref::LagrangeRefSpace{T,2,3} where {T}, sh, el)
+#=function curl(ref::LagrangeRefSpace{T,2,3} where {T}, sh, el)
     #    curl of lagc0d2 as combination of bdm functions 
     z=zero(typeof(sh.coeff))
     if sh.refid < 4
@@ -203,7 +203,7 @@ function curl(ref::LagrangeRefSpace{T,2,3} where {T}, sh, el)
         sh4 = Shape(sh.cellid, mod1(2*sh.refid+7,6), z*sh.coeff)
     end
     return [sh1, sh2, sh3, sh4]
-end
+end=#
 
 
 const _vert_perms_lag = [
@@ -420,7 +420,7 @@ function curl_local_matrix(ref::LagrangeRefSpace{T,2,3} where {T})
 end
 
 
-#=function curl(ref::LagrangeRefSpace{T,2,3} where {T}, sh, el)
+function curl(ref::LagrangeRefSpace{T,2,3} where {T}, sh, el)
     #curl of lagc0d2 as combination of gwp order 1 functions 
 
     curl_matrix=curl_local_matrix(ref)#LagrangeRefSpace{T,2,3} where {T})
@@ -432,7 +432,7 @@ end
     end
 
     return sh_vec
-end=#
+end
 
 
 function curl_local_matrix(ref::LagrangeRefSpace{T,3,3,10} where {T}) 
