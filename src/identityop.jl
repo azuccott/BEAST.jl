@@ -113,7 +113,7 @@ function quaddata(op::LocalOperator, g::GWPDivRefSpace, f::GWPDivRefSpace,
 end
 
 
-const NonLinearRefSpaceTriangle = Union{NDRefSpace, GWPDivRefSpace,GWPCurlRefSpace}#actually mixed linear and non
+const NonLinearRefSpaceTriangle = Union{BDMRefSpace,NDRefSpace, GWPDivRefSpace,GWPCurlRefSpace}#actually mixed linear and non
 
 defaultquadstrat(::LocalOperator, ::NonLinearRefSpaceTriangle, ::NonLinearRefSpaceTriangle) = SingleNumQStrat(7)
 function quaddata(op::LocalOperator, g::NonLinearRefSpaceTriangle, f::NonLinearRefSpaceTriangle,
