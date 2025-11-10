@@ -673,9 +673,9 @@ gradient(space::LagrangeBasis{1,0}, geo, fns) = NDLCCBasis(geo, fns)
 
 curl(space::LagrangeBasis{1,0}, geo, fns) = RTBasis(geo, fns)
 
-#curl(space::LagrangeBasis{2,0}, geo, fns) = BDMBasis(geo, fns) 
+curl(space::LagrangeBasis{2,0}, geo, fns) = BDMBasis(geo, fns) 
 
-curl(space::LagrangeBasis{2,0}, geo, fns) = GWPDivSpace(geo, fns,Vector{vertextype(geo)}(undef,length(fns)),1) #is it ok to live it undef?
+#curl(space::LagrangeBasis{2,0}, geo, fns) = GWPDivSpace(geo, fns,Vector{vertextype(geo)}(undef,length(fns)),1) #is it ok to live it undef?
 
 gradient(space::LagrangeBasis{1,0,<:CompScienceMeshes.AbstractMesh{<:Any,2}}, geo, fns) =
     LagrangeBasis{0,-1,1}(geo, fns, space.pos)
