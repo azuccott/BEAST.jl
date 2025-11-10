@@ -1345,7 +1345,7 @@ end
 
 #curl(space::LagrangeBasis{1,0}, geo, fns) = RTBasis(geo, fns)
 
-curl(space::LagrangeBasis{2,0}, geo, fns) = BDMBasis(geo, fns) 
+#curl(space::LagrangeBasis{2,0}, geo, fns) = BDMBasis(geo, fns) 
 
 # gradient(space::LagrangeBasis{1,0,<:CompScienceMeshes.AbstractMesh{<:Any,2}}, geo, fns) =
 #     LagrangeBasis{0,-1,1}(geo, fns, space.pos)
