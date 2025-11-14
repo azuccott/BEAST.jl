@@ -206,6 +206,71 @@ end
 end=#
 
 
+
+
+function curl(localspace::LagrangeRefSpace, sh, ch)
+    fns = curl(localspace, sh.cellid, ch)
+    α = sh.coeff
+    S = typeof(sh)
+    return S[S(s.cellid, s.refid, α*s.coeff) for s in fns[sh.refid]]
+end
+
+
+function curl(localspace::LagrangeRefSpace{T,D,3,N}, cellid::Int, ch) where {T,D,N}
+    function fields(p)
+        map(localspace(p)) do x
+            x.curl
+        end
+    end
+    atol = sqrt(eps(T))
+    gwp = GWPDivRefSpace{T,D-1}()
+    coeffs = interpolate(fields, gwp, ch)
+    S = BEAST.Shape{T}
+    A = Vector{Vector{S}}(undef, size(coeffs,1))
+    for r in axes(coeffs,1)
+        A[r] = collect(S(cellid, c, coeffs[r,c]) for c in axes(coeffs,2) if abs(coeffs[r,c]) > atol)
+    end
+    return SVector{N}(A)
+end
+
+
+
+@testitem "curl - chartwise" begin
+    using LinearAlgebra
+    using CompScienceMeshes
+    const CSM = CompScienceMeshes
+
+    T = Float64
+    D = 1
+    NF = binomial(2+D, 2)
+    gwp = BEAST.GWPDivRefSpace{T,D-1}()
+    lgc = BEAST.LagrangeRefSpace{T,D,3,NF}()
+
+    ch = CSM.simplex(
+        point(1,0,0),
+        point(0,1,0),
+        point(0,0,0))
+
+    curlfns = BEAST.curl(lgc, 1, ch)
+
+    p = neighborhood(ch, (0.2341, 0.4321))
+    gwp_vals = gwp(p)
+    lgc_vals = lgc(p)
+
+    err = similar(Vector{T}, axes(gwp_vals))
+    for i in eachindex(lgc_vals)
+        val1 = lgc_vals[i].curl
+        val2 = zero(val1)
+        for sh in curlfns[i]
+            val2 += sh.coeff * gwp_vals[sh.refid].value
+        end
+        err[i] = norm(val1 - val2)
+    end
+    atol = sqrt(eps(T))
+    @test all(err .< atol)
+end
+
+
 const _vert_perms_lag = [
     (1,2,3),
     (2,3,1),
@@ -406,7 +471,7 @@ function interpolate(fields, interpolant::LagrangeRefSpace{T,Degree,3}, chart) w
     return Q
 end
 
-function curl_local_matrix(ref::LagrangeRefSpace{T,2,3} where {T}) 
+#=function curl_local_matrix(ref::LagrangeRefSpace{T,2,3} where {T}) 
     line1 = [-2.980495238796084e-17, -0.33333333333333326, 1.666666666666667, -1.3333333333333341, 0.0, -2.980495238796084e-17]
     line2 = [-2.980495238796084e-17, -1.6666666666666663, 0.3333333333333335, 1.3333333333333328, 0.0, -5.960990477592168e-17]
     line3 = [0.3333333333333332, 5.164700352369266e-17, -1.6666666666666667, 6.197640422843119e-16, 1.3333333333333333, 1.2911750880923164e-16]
@@ -468,4 +533,4 @@ function curl(ref::LagrangeRefSpace{T,3,3,10} where {T}, sh, el)
 
     return sh_vec
 end
-
+=#
