@@ -22,9 +22,11 @@ function (ϕ::GWPDivRefSpace{T,Degree})(p) where {T,Degree}
     u = parametric(p)
     vals = ψ(dom, u)
     vals = pushforwardcurl(vals, p)
+    j = jacobian(p)
+    invj=1/j
     n = normal(p)
     map(vals) do v
-        (value = -n × v.value, divergence=v.curl)
+        (value = -n × invj*(v.value), divergence=invj*(v.curl))
     end
 end
 
