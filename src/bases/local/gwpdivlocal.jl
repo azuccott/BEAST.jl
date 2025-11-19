@@ -26,7 +26,7 @@ function (ϕ::GWPDivRefSpace{T,Degree})(p) where {T,Degree}
     invj=1/j
     n = normal(p)
     map(vals) do v
-        (value = -n × (invj*(v.value)), divergence=invj*(v.curl))
+        (value = -n × ((v.value)), divergence=invj*(v.curl))
     end
 end
 
