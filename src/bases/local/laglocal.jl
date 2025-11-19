@@ -447,21 +447,43 @@ end
 function interpolate(fields, interpolant::LagrangeRefSpace{T,Degree,3}, chart) where {T,Degree}
 
     dim = binomial(2+Degree, Degree)
-
-    I = 0:Degree
-    s = range(0,1,length=Degree+1)
-    Is = zip(I,s)
-    idx = 1
     vals = Vector{Vector{T}}()
-    for (i,ui) in Is
-        for (j,vj) in Is
-            for (k,wk) in Is
-                i + j + k == Degree || continue
-                @assert ui + vj + wk ≈ 1
-                p = neighborhood(chart, (ui,vj))
-                push!(vals, fields(p))
-                idx += 1
-    end end end
+    if Degree > 0
+        I = 0:Degree
+        s = range(0,1,length=Degree+1)
+        Is = zip(I,s)
+        for (i,ui) in Is
+            for (j,vj) in Is
+                for (k,wk) in Is
+                    i + j + k == Degree || continue
+                    @assert ui + vj + wk ≈ 1
+                    p = neighborhood(chart, (ui,vj))
+                    push!(vals, fields(p))
+        end end end
+    else
+        p = center(chart)
+        push!(vals, fields(p))
+    end
+    # Q = hcat(vals...)
+    Q = Matrix{T}(undef, length(vals[1]), length(vals))
+    for i in eachindex(vals)
+        Q[:,i] .= vals[i]
+    end
+    return Q
+end
+
+function interpolate(fields, interpolant::LagrangeRefSpace{T,1,3}, chart) where {T}
+    vals = Vector{Vector{T}}()
+
+
+    p1 = neighborhood(chart, (1,0))
+    p2 = neighborhood(chart, (0,1))
+    p3 = neighborhood(chart, (0,0))
+    push!(vals, fields(p1))
+    push!(vals, fields(p2))
+    push!(vals, fields(p3))
+    
+   
 
     # Q = hcat(vals...)
     Q = Matrix{T}(undef, length(vals[1]), length(vals))
@@ -470,6 +492,7 @@ function interpolate(fields, interpolant::LagrangeRefSpace{T,Degree,3}, chart) w
     end
     return Q
 end
+
 
 #=function curl_local_matrix(ref::LagrangeRefSpace{T,2,3} where {T}) 
     line1 = [-2.980495238796084e-17, -0.33333333333333326, 1.666666666666667, -1.3333333333333341, 0.0, -2.980495238796084e-17]
