@@ -164,8 +164,8 @@ end
 
 const NonLinearRefSpaceTriangle = Union{BDMRefSpace,NDRefSpace, GWPDivRefSpace,GWPCurlRefSpace}#actually mixed linear and non
 
-defaultquadstrat(::LocalOperator, ::NonLinearRefSpaceTriangle, ::NonLinearRefSpaceTriangle) = SingleNumQStrat(7)
-function quaddata(op::LocalOperator, g::NonLinearRefSpaceTriangle, f::NonLinearRefSpaceTriangle,
+#defaultquadstrat(::LocalOperator, ::NonLinearRefSpaceTriangle, ::NonLinearRefSpaceTriangle) = SingleNumQStrat(7)
+#=function quaddata(op::LocalOperator, g::NonLinearRefSpaceTriangle, f::NonLinearRefSpaceTriangle,
     tels::Vector, bels::Vector,
     qs::SingleNumQStrat)
 
@@ -173,7 +173,7 @@ function quaddata(op::LocalOperator, g::NonLinearRefSpaceTriangle, f::NonLinearR
     qd = [(w[i],SVector(u[1,i],u[2,i])) for i in 1:length(w)]
     A = _alloc_workspace(qd, g, f, tels, bels)
     return qd, A
-end
+end=#
 
 
 defaultquadstrat(::LocalOperator, ::RTRefSpace, ::GWPCurlRefSpace) = SingleNumQStrat(7)
@@ -234,7 +234,7 @@ defaultquadstrat(::LocalOperator, _::Space, _::Space) = SingleNumQStrat(6)
 #     return qd, A
 # end
 
-#=function quaddata(op::LocalOperator, g, f, 
+function quaddata(op::LocalOperator, g, f, 
     tels::Vector{<:CompScienceMeshes.Simplex{U,2}}, bels::Vector{<:CompScienceMeshes.Simplex{U,2}},
     qs::SingleNumQStrat) where {U}
 
@@ -243,4 +243,4 @@ defaultquadstrat(::LocalOperator, _::Space, _::Space) = SingleNumQStrat(6)
     A = _alloc_workspace(qd, g, f, tels, bels)
 
     return qd, A
-end=#
+end
