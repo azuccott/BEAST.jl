@@ -77,6 +77,17 @@ function dof_perm_matrix(::RTRefSpace, vert_permutation)
 end
 
 
+function interpolate!(out, interpolant::RefSpace, chart1, interpolee::RefSpace, chart2)
+    function fields(p)
+        x = cartesian(p)
+        v = carttobary(chart2, x)
+        r = neighborhood(chart2, v)
+        fieldvals = [f.value for f in interpolee(r)]
+    end
+
+    interpolate!(out, fields, interpolant, chart1)
+end
+
 
 
 function interpolate(fields, interpolant::RTRefSpace{T}, chart) where {T}
@@ -130,6 +141,9 @@ end end end
 
 
 
+function restrict!(out, ϕ::RefSpace, dom1, dom2, dom2todom1)
+    interpolate!(out, ϕ, dom2, ϕ, dom1, dom2todom1)
+end
 
 const _dof_rtperm_matrix = [
     @SMatrix[1 0 0;         # 1. {1,2,3}

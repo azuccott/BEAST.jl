@@ -283,6 +283,9 @@ function assemblechunk!(biop::IntegralOperator, tfs::Space, bfs::Space, store;
     numfunctions(tfs) == 0 && return
     numfunctions(bfs) == 0 && return
 
+    numfunctions(tfs) == 0 && return
+    numfunctions(bfs) == 0 && return
+
     tr = assemblydata(tfs); tr == nothing && return
     br = assemblydata(bfs); br == nothing && return
 

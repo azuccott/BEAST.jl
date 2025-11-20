@@ -816,7 +816,6 @@ function interpolate(fields, interpolant::LagrangeRefSpace{T,Degree,3}, chart) w
     return Q
 end
 
-
 # function interpolate(fields, interpolant::LagrangeRefSpace{T,1,3}, chart) where {T}
 #     vals = Vector{Vector{T}}()
 

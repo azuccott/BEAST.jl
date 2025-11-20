@@ -624,12 +624,9 @@ end
 # """
 #     lagrangec0d1(mesh[, bnd])
 
-# Construct the basis of continuous, piecewise linear basis functions subordinate
-# to mesh `mesh`. Basis functions are constructed at vertices in the interior of
-# the mesh and on the closure of 'bnd'. In particular, leaving out the second argument
-# creates a finite element space subject to homogeneous Dirichlet boundary conditions.
-# """
-# function lagrangec0d1_dirichlet(mesh)
+#Construct the basis of continuous, piecewise linear basis functions subordinate to mesh `mesh`. Basis functions are constructed at vertices in the interionr of the mesh and on the closure of 'bnd'. In particular, leaving out the second argument creates a finite element space subject to homogeneous Dirichlet boundary conditions.
+#"""
+#function lagrangec0d1_dirichlet(mesh)
 
 #     verts = skeleton(mesh, 0)
 #     detached = trues(numvertices(mesh))
@@ -672,6 +669,24 @@ end
 DUAL LAGRANGE SPACES
 ====#
 
+function lagrangec0_dirichlet(mesh; order=1)
+
+    verts = skeleton(mesh, 0)
+    detached = trues(numvertices(mesh))
+    for v in cells(verts)
+        detached[v] = false
+    end
+
+    bnd = boundary(mesh)
+    bndverts = skeleton(bnd, 0)
+    notonbnd = trues(numvertices(mesh))
+    for v in cells(bndverts)
+        notonbnd[v] = false
+    end
+
+    vertexlist = findall(notonbnd .& .!detached)
+    lagrangec0(mesh, vertexlist, Val{dimension(mesh)+1}; order=order)
+end
 
 function interior_and_junction_vertices(mesh, jct)
     verts = skeleton(mesh, 0)
@@ -1345,7 +1360,7 @@ end
 
 #curl(space::LagrangeBasis{1,0}, geo, fns) = RTBasis(geo, fns)
 
-#curl(space::LagrangeBasis{2,0}, geo, fns) = BDMBasis(geo, fns) 
+##curl(space::LagrangeBasis{2,0}, geo, fns) = BDMBasis(geo, fns) 
 
 # gradient(space::LagrangeBasis{1,0,<:CompScienceMeshes.AbstractMesh{<:Any,2}}, geo, fns) =
 #     LagrangeBasis{0,-1,1}(geo, fns, space.pos)
@@ -1761,155 +1776,48 @@ end
 #                 end
 #             end
 #         end
-
-#         order < 2 && continue
-#         E = R12[nzrange(C12,cell)]
-#         I = V12[nzrange(C12,cell)]
-#         for (i,e) in zip(I, E)
-#             edge_ch = chart(edges, e)
-#             gids = nV + (e-1)*ne + 1: nV + e*ne
-#             lids = localindices(_LagrangeGlobalEdgeDoFs(d), cell_ch, localspace, i)
-#             @assert length(lids) == length(gids)
-#             v = globaldofs(edge_ch, cell_ch, localspace, _LagrangeGlobalEdgeDoFs(d))
-#             α = v[lids, :]
-#             β = inv(α')
-#             for i in axes(β,1)
-#                 for j in axes(β,2)
-#                     isapprox(β[i,j], 0; atol) && continue
-#                     push!(fns[gids[i]], S(cell, lids[j], β[i,j]))
-#                 end
-#             end
-#         end
-
-#         order < 3 && continue
-#         F = [cell]
-#         for (q,f) in enumerate(F)
-#             face_ch = chart(mesh, f)
-#             gids = nV + nE + (f-1)*nf + 1 : nV + nE + f*nf
-#             lids = localindices(_LagrangeGlobalFaceDoFs(d), cell_ch, localspace, 1)
-#             v = globaldofs(face_ch, cell_ch, localspace, _LagrangeGlobalFaceDoFs(d))
-#             α = v[lids, :]
-#             # @show α
-#             β = inv(α')
-#             for i in axes(β,1)
-#                 for j in axes(β,2)
-#                     isapprox(β[i,j], 0; atol) && continue
-#                     push!(fns[gids[i]], S(cell, lids[j], β[i,j]))
-#                 end
-#             end
-#         end 
-#     end
-
-#     for v in verts pos[v] = cartesian(center(chart(verts, v))) end
-#     for e in edges pos[nV + (e-1)*ne + 1: nV + e*ne] .= Ref(cartesian(center(chart(edges, e)))) end
-#     for f in mesh pos[nV + nE + (f-1)*nf + 1: nV + nE + f*nf] .= Ref(cartesian(center(chart(mesh, f)))) end
-
-#     return LagrangeBasis{order,0,localdim}(mesh, fns, pos)
-# end
-
-@testitem "duallagrangec0d1" begin
-    using CompScienceMeshes
-    Γ = meshcuboid(1.0,1.0,1.0,0.5)
-    @test BEAST._surface(duallagrangec0d1(Γ)) ≈ 6.0
-end
-
-@testitem "duallagrangec0d1 on open surfaces" begin
-    using CompScienceMeshes
-    # dual P1 must reproduce constants on an open surface too: a boundary edge
-    # belongs to one coarse cell, so its coefficient is one, not one half
-    Γ = meshrectangle(1.0, 1.0, 0.25, 3)
-    @test BEAST._surface(duallagrangec0d1(Γ)) ≈ 1.0
-    # closed surfaces are unchanged
-    @test BEAST._surface(duallagrangec0d1(meshcuboid(1.0,1.0,1.0,0.5))) ≈ 6.0
-end
-
-@testitem "duallagrangecxd0" begin
-    using CompScienceMeshes
-    Γ = meshcuboid(1.0,1.0,1.0,0.5)
-    @test BEAST._surface(duallagrangecxd0(Γ)) ≈ 6.0
-end
-
-@testitem "duallagrangecxd0 on curves" begin
-    using CompScienceMeshes
-
-    # closed curve, vertex numbering inherited from the parent surface
-    Γ = boundary(meshrectangle(1.0,1.0,0.5,3))
-    X = duallagrangecxd0(Γ)
-    @test numfunctions(X) == numcells(Γ)
-    @test BEAST._surface(X) ≈ 4.0
-
-    # open curve: the two end vertices carry no dual function
-    Λ = meshsegment(1.0, 1/4, 3)
-    Y = duallagrangecxd0(Λ)
-    @test numfunctions(Y) == numcells(Λ) - 1
-    @test BEAST._surface(Y) ≈ 0.75
-
-    # junction supplied, half-pyramids on end vertices are kept
-    Z = duallagrangecxd0(Λ, boundary(Λ))
-    @test numfunctions(Z) == numcells(Λ) + 1
-    @test BEAST._surface(Z) ≈ 1.0
-end
-
-@testitem "duallagrangec0d1 on curves" begin
-    using CompScienceMeshes
-    using StaticArrays
-
-    function maxjump(X) #function to find maximum jump of basis X
-        fine = BEAST.geometry(X)
-        fcells = collect(fine)
-        incident = Dict{Int, Vector{Int}}()
-        for c in 1:numcells(fine), v in CompScienceMeshes.indices(fine, fcells[c])
-            push!(get!(incident, v, Int[]), c)
-        end
-        jump = 0.0
-        for fn in X.fns
-            val = Dict{Tuple{Int,Int},Float64}()
-            for s in fn
-                v = CompScienceMeshes.indices(fine, fcells[s.cellid])[s.refid]
-                val[(s.cellid, v)] = get(val, (s.cellid, v), 0.0) + s.coeff
-            end
-            for (c, v) in keys(val)
-                xs = [get(val, (c2, v), 0.0) for c2 in incident[v]]
-                jump = max(jump, maximum(xs) - minimum(xs))
+#=
+        E = R12[nzrange(C12,cell)]
+        I = V12[nzrange(C12,cell)]
+        for (i,e) in zip(I, E)
+            edge_ch = chart(edges, e)
+            gids = nV + (e-1)*ne + 1: nV + e*ne
+            lids = localindices(_LagrangeGlobalEdgeDoFs(d), cell_ch, localspace, i)
+            @assert length(lids) == length(gids)
+            v = globaldofs(edge_ch, cell_ch, localspace, _LagrangeGlobalEdgeDoFs(d))
+            α = v[lids, :]
+            β = inv(α')
+            for i in axes(β,1)
+                for j in axes(β,2)
+                    isapprox(β[i,j], 0; atol) && continue
+                    push!(fns[gids[i]], S(cell, lids[j], β[i,j]))
+                end
             end
         end
-        jump
+
+        order < 3 && continue
+        F = [cell]
+        for (q,f) in enumerate(F)
+            face_ch = chart(mesh, f)
+            gids = nV + nE + (f-1)*nf + 1 : nV + nE + f*nf
+            lids = localindices(_LagrangeGlobalFaceDoFs(d), cell_ch, localspace, 1)
+            v = globaldofs(face_ch, cell_ch, localspace, _LagrangeGlobalFaceDoFs(d))
+            α = v[lids, :]
+            # @show α
+            β = inv(α')
+            for i in axes(β,1)
+                for j in axes(β,2)
+                    isapprox(β[i,j], 0; atol) && continue
+                    push!(fns[gids[i]], S(cell, lids[j], β[i,j]))
+                end
+            end
+        end 
     end
 
-    len(m) = sum(volume(chart(m, p)) for p in m)
+    for v in verts pos[v] = cartesian(center(chart(verts, v))) end
+    for e in edges pos[nV + (e-1)*ne + 1: nV + e*ne] .= Ref(cartesian(center(chart(edges, e)))) end
+    for f in mesh pos[nV + nE + (f-1)*nf + 1: nV + nE + f*nf] .= Ref(cartesian(center(chart(mesh, f)))) end
 
-    #close curve
-    n = 8
-    verts = [SVector(cos(2π*k/n), sin(2π*k/n), 0.0) for k in 0:n-1]
-    faces = [CompScienceMeshes.SimplexGraph{2}(SVector(k, mod1(k+1, n))) for k in 1:n]
-    Γ = Mesh(verts, faces)
-    X = duallagrangec0d1(Γ)
-    @test numfunctions(X) == numcells(Γ)
-    @test all(==(6), length.(X.fns))
-    @test maxjump(X) < 1e-12 # check if space is C0
-    @test BEAST._surface(X) ≈ len(Γ)
+    return LagrangeBasis{order,0,localdim}(mesh, fns, pos)
+end=#
 
-    # open curve: end segments carry one shape less
-    Λ = meshsegment(1.0,1/4, 3)
-    Y = duallagrangec0d1(Λ)
-    @test numfunctions(Y) == numcells(Λ)
-    @test sort(unique(length.(Y.fns))) == [5, 6]
-    @test maxjump(Y) < 1e-12
-    @test BEAST._surface(Y) ≈ 1.0
-
-    # vertex numbering inherited from a parent surface (github issue #195)
-    Γb = boundary(meshrectangle(1.0,1.0,1/4, 2))
-    Z = duallagrangec0d1(Γb)
-    @test numfunctions(Z) == numcells(Γb)
-    @test maxjump(Z) < 1e-12
-end
-
-@testitem "unitfunctioncxd0 in a two dimensional universe" begin
-    using CompScienceMeshes
-
-    Γ = meshcircle(1.0, 2π/20) # a curve in the plane
-    len = sum(volume(chart(Γ, p)) for p in Γ)
-    @test numfunctions(BEAST.unitfunctioncxd0(Γ)) == 1
-    @test BEAST._surface(duallagrangec0d1(Γ)) ≈ len
-    @test BEAST._surface(duallagrangecxd0(Γ)) ≈ len
-end

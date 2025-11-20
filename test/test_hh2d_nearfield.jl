@@ -26,7 +26,6 @@ using Test
 
     # Interior problem
     # Formulations from Sauter and Schwab, Boundary Element Methods(2011), Chapter 3.4.1.1
-
     pos1 = SVector(r * 1.5, 0.0)  # positioning of point charges
     pos2 = SVector(-r * 1.5, 0.0)
 

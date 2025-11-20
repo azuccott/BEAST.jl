@@ -44,7 +44,6 @@ function saddlepoint(A::SparseMatrixCSC,B::SparseMatrixCSC,P1::SparseMatrixCSC,P
     return GMRESSolver(SP, left_preconditioner=Pdiv, maxiter=200, restart=50, reltol=1e-8, verbose=false) 
 end
 
-
 function assemble(::QHProjector, X::Space; quadstrat=defaultquadstrat)
     error("Not implemented")
 end
