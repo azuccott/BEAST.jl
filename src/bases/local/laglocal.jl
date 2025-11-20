@@ -474,7 +474,6 @@ end
     atol = sqrt(eps(T))
     @test all(err .< atol)
 end
-=#
 
 
 function curl(localspace::LagrangeRefSpace, sh, ch)
@@ -583,7 +582,7 @@ function restrict(f::LagrangeRefSpace{T,2}, dom1, dom2) where T
 
     return Q
 end
-=#
+
 
 
 function curl(localspace::LagrangeRefSpace, sh, ch)
