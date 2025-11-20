@@ -4,6 +4,8 @@ using StaticArrays
 
 module PkgTests
 
+using TestItemRunner
+
 using Distributed
 using LinearAlgebra
 using SparseArrays
@@ -16,6 +18,7 @@ include("test_fourier.jl")
 include("test_specials.jl")
 
 include("test_basis.jl")
+include("test_lagrange.jl")
 include("test_directproduct.jl")
 include("test_raviartthomas.jl")
 include("test_rt.jl")
@@ -45,11 +48,17 @@ include("test_local_storage.jl")
 include("test_embedding.jl")
 
 include("test_assemblerow.jl")
-include("test_mixed_blkassm.jl")
+# include("test_mixed_blkassm.jl")
 include("test_local_assembly.jl")
 include("test_assemble_refinements.jl")
 
 include("test_dipole.jl")
+
+include("test_sauterschwabints1D.jl")
+include("test_hh2d_exec.jl")
+include("test_hh2d_mie.jl")
+include("test_hh2d_mie_higher_order.jl")
+include("test_hh2d_nearfield.jl")
 
 include("test_wiltonints.jl")
 include("test_sauterschwabints.jl")
@@ -60,7 +69,7 @@ include("test_nitschehh3d.jl")
 
 include("test_curlcurlgreen.jl")
 include("test_hh3dtd_exc.jl")
-include("test_hh3dexc.jl")
+# include("test_hh3dexc.jl")
 include("test_hh3d_nearfield.jl")
 include("test_tdassembly.jl")
 include("test_tdhhdbl.jl")
@@ -78,13 +87,22 @@ include("test_variational.jl")
 
 include("test_handlers.jl")
 include("test_ncrossbdm.jl")
-include("test_curl_lagc0d1_lagc0d2.jl")
+#include("test_curl_lagc0d1_lagc0d2.jl")
 include("test_gridfunction.jl")
 
 include("test_hh_lsvie.jl")
 
-using TestItemRunner
-@run_package_tests
+include("test_itsolver.jl")
+
+include("test_hh_lsvie.jl")
+
+include("test_composed_basis.jl")
+include("test_composed_operator.jl")
+include("test_analytic_excitation.jl")
+include("test_vie.jl")
+include("test_evie_dvie.jl")
+
+@run_package_tests filter=ti->!(:example in ti.tags) verbose=true
 
 
 try

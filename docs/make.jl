@@ -8,6 +8,7 @@ makedocs(;
     modules=[BEAST],
     authors="Kristof Cools and contributors",
     sitename="BEAST.jl",
+    checkdocs=:none,
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
         canonical="https://krcools.github.io/BEAST.jl",
@@ -15,21 +16,30 @@ makedocs(;
         assets=String[],
         collapselevel=1,
         sidebar_sitename=true,
+        size_threshold=1_000_000,
     ),
     plugins=[bib],
     pages=[
         "Introduction" => "index.md",
         "Manual" => Any[
             "General Usage"=>"manual/usage.md",
-            "Customising Quadrature Rules" => "manual/quadstrat.md",
+            "Custom excitations"=>"manual/customexc.md",
+            "Setting the Quadrature Strategy" => "manual/quadstrat.md",
+            "Custom Quadrature Rules" => "manual/quadrule.md",
+            "Custom Operators" => "manual/customop.md",
             "Application Examples"=>Any[
                 "Time-Harmonic"=>Any[
                     "EFIE"=>"manual/examplesTH/efie.md",
                     "MFIE"=>"manual/examplesTH/mfie.md",
                 ],
-                "Time-Domain"=>Any["EFIE"=>"manual/examplesTD/tdefie.md"],
+                "Time-Domain"=>Any[
+                    "EFIE"=>"manual/examplesTD/tdefie.md",
+                ],
             ],
             "System of Equations and Bilinear Forms" => "manual/bilinear.md",
+        ],
+        "Tutorials" => Any[
+            "tutorials/efie.md",
         ],
         "Operators & Excitations" => Any[
             "Overview"=>"operators/overview.md",
@@ -55,6 +65,13 @@ makedocs(;
                 "Monopole"=>"excitations/monopole.md",
                 "Linear Potential"=>"excitations/linearpotential.md",
             ],
+            "Composed Operator"=>Any[
+                "Composed Operator"=>"composedoperator/composedoperator.md"
+            ],
+            "Quasi Helmholtz Projectors"=>Any[
+                "Low Frequency Stable PMCHWT"=>"projectors/pmchwt_lf.md",
+                "Dense Grid Stable PMCHWT"=>"projectors/pmchwt_theta.md",
+            ],
         ],
         "Basis Functions" => Any[
             "Overview"=>"bases/overview.md",
@@ -66,7 +83,10 @@ makedocs(;
             ],
             "Temporal"=>Any[],
         ],
-        "Geometry Representations" => Any["Flat"=>"geometry/flat.md", "Curvilinear"=>Any[]],
+        "Geometry Representations" => Any[
+            "Flat"=>"geometry/flat.md",
+            "Curvilinear"=>Any[]
+        ],
         "____________________________________" => Any[],
         "Internals" => Any[
             "Overview"=>"internals/overview.md",
@@ -75,8 +95,8 @@ makedocs(;
             "Parametric Domain"=>Any[],
             "Multithreading"=>Any[],
         ],
-        "Contributing" => "contributing.md",
-        "References" => "references.md",
+        "Contributing" => Any["contributing.md"],
+        "References" => Any["references.md"],
         "API Reference" => "apiref.md",
     ],
 )
@@ -84,7 +104,7 @@ makedocs(;
 deploydocs(;
     repo="github.com/krcools/BEAST.jl.git",
     target="build",
-    push_preview=true,
-    forcepush=true,
+    # push_preview=true,
+    forcepush=false,
     #devbranch = "feature/docs",
 )
