@@ -234,7 +234,7 @@ defaultquadstrat(::LocalOperator, _::Space, _::Space) = SingleNumQStrat(6)
 #     return qd, A
 # end
 
-function quaddata(op::LocalOperator, g, f, 
+#=function quaddata(op::LocalOperator, g, f, 
     tels::Vector{<:CompScienceMeshes.Simplex{U,2}}, bels::Vector{<:CompScienceMeshes.Simplex{U,2}},
     qs::SingleNumQStrat) where {U}
 
@@ -243,4 +243,4 @@ function quaddata(op::LocalOperator, g, f,
     A = _alloc_workspace(qd, g, f, tels, bels)
 
     return qd, A
-end
+end=#
