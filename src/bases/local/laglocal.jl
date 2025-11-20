@@ -393,22 +393,22 @@ function (f::LagrangeRefSpace{T,2,3})(t) where T
 end
 
 
-function curl(ref::LagrangeRefSpace{T,2,3} where {T}, sh, el)
+#function curl(ref::LagrangeRefSpace{T,2,3} where {T}, sh, el)
     #curl of lagc0d2 as combination of bdm functions 
-    z=zero(typeof(sh.coeff))
-    if sh.refid < 4
-        sh1 = Shape(sh.cellid, mod1(2*sh.refid+1,6), +sh.coeff)
-        sh2 = Shape(sh.cellid, mod1(2*sh.refid+2,6), -3*sh.coeff)
-        sh3 = Shape(sh.cellid, mod1(2*sh.refid+3,6), +3*sh.coeff)
-        sh4 = Shape(sh.cellid, mod1(2*sh.refid+4,6), -sh.coeff)
-    else
-        sh1 = Shape(sh.cellid, mod1(2*sh.refid+4,6), z*sh.coeff)
-        sh2 = Shape(sh.cellid, mod1(2*sh.refid+5,6), -4*sh.coeff)
-        sh3 = Shape(sh.cellid, mod1(2*sh.refid+6,6), +4*sh.coeff)
-        sh4 = Shape(sh.cellid, mod1(2*sh.refid+7,6), z*sh.coeff)
-    end
-    return [sh1, sh2, sh3, sh4]
-end=#
+ #   z=zero(typeof(sh.coeff))
+  #  if sh.refid < 4
+  #      sh1 = Shape(sh.cellid, mod1(2*sh.refid+1,6), +sh.coeff)
+   #     sh2 = Shape(sh.cellid, mod1(2*sh.refid+2,6), -3*sh.coeff)
+    #    sh3 = Shape(sh.cellid, mod1(2*sh.refid+3,6), +3*sh.coeff)
+     #   sh4 = Shape(sh.cellid, mod1(2*sh.refid+4,6), -sh.coeff)
+   # else
+    #    sh1 = Shape(sh.cellid, mod1(2*sh.refid+4,6), z*sh.coeff)
+     #   sh2 = Shape(sh.cellid, mod1(2*sh.refid+5,6), -4*sh.coeff)
+     #   sh3 = Shape(sh.cellid, mod1(2*sh.refid+6,6), +4*sh.coeff)
+      #  sh4 = Shape(sh.cellid, mod1(2*sh.refid+7,6), z*sh.coeff)
+    #end
+    #return [sh1, sh2, sh3, sh4]
+#end
 
 
 
