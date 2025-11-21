@@ -72,9 +72,6 @@ function assemble!(biop::LocalOperator, tfs::Space, bfs::Space, store,
         kwargs...)
 
         quadstrat = quadstrat(biop, tfs, bfs)
-
-    numfunctions(tfs) == 0 && return
-    numfunctions(bfs) == 0 && return
  
     if geometry(tfs) == geometry(bfs)
         return assemble_local_matched!(biop, tfs, bfs, store; quadstrat, verbose)
@@ -198,7 +195,7 @@ end
 function assemble_local_refines!(biop::LocalOperator, tfs::Space, bfs::Space, store;
     quadstrat=defaultquadstrat(biop, tfs, bfs), verbose=true)
 
-    # println("Using 'refines' algorithm for local assembly:")
+    println("Using 'refines' algorithm for local assembly:")
 
     tgeo = geometry(tfs)
     bgeo = geometry(bfs)
@@ -313,7 +310,7 @@ function elementstree(elements, expansion_ratio=1.1)
         end
     end
 
-    return Octree(points, radii, T(expansion_ratio))
+    return Octree(points, radii)
 end
 
 struct MixedAssemblyVisitor{B,C,BR,TR,TA,BA,Q,O,S,T,QS}

@@ -41,6 +41,3 @@ function integrate!(biop,
 
     return z
 end
-
-
-_TransposedStrat(a::DoubleQuadRule) = a

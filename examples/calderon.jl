@@ -12,7 +12,7 @@ N = NCross()
 E = Maxwell3D.planewave(direction=ẑ, polarization=x̂, wavenumber=κ)
 e = (n × E) × n
 
-bx = assemble(e, X)
+b = assemble(e, X)
 
 A = assemble(T,X,X); println("primal discretisation assembled.")
 

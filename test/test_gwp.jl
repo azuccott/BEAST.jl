@@ -30,7 +30,7 @@ end
 
     nf = numfunctions(ϕ, dom)
     @test coeffs ≈ Matrix{T}(I,nf,nf) atol=sqrt(eps(T))
-    # display(round.(coeffs, digits=3))
+    display(round.(coeffs, digits=3))
 
 end
 
@@ -54,7 +54,7 @@ end
     nf1 = numfunctions(ψ, domain(supp))
     nf2 = numfunctions(ϕ, domain(supp))
     @test size(coeffs) == (nf1, nf2)
-    # display(round.(coeffs, digits=3))
+    display(round.(coeffs, digits=3))
 
     pts = [
         point(T, 0.3, 0.1),

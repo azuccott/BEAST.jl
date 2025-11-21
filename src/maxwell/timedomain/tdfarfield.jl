@@ -1,14 +1,15 @@
 
 
 """
-Operatorss to compute the far field of a current distribution in the time domain.
+Operator to compute the far field of a current distribution in the time domain.
 In particular, given the current distribution ``j`` this operator allows for the computation of
 
 ```math
-\\text{ffd} = n × ∫_Γ j(r', t - x⋅y/c) dy
+R =  ̂x ⋅ y
+ffd = n × ∫_Γ j(r', t - R/c} dy
 ```
 
-where ``x`` is the unit vector in the direction of observation.
+where ``̂x`` is the unit vector in the direction of observation.
 Note that the assembly routing expects the observation directions to be normalised by the caller.
 """
 mutable struct MWFarField3DTD{K}

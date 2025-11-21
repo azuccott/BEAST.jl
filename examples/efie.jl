@@ -1,33 +1,22 @@
-# # EFIE
-#
-# This example demonstrates the modelling of scattering by a perfectly conducting
-# sphere using the Electric Field Integral Equation (EFIE).
-#
-
-using LinearAlgebra
 using CompScienceMeshes
 using BEAST
-import PlotlyDocumenter # hide
-
-# We call upon GMsh to create a flat-faceted triangular mesh for the sphere. 
-# Subordinate to this mesh the space of lowest order Raviart-Thomas elements is
-# constructed. For reproducibility of this example, a pre-constructed mesh is
-# loaded from disk.
 
 Γ = readmesh(joinpath(dirname(pathof(BEAST)),"../examples/sphere2.in"))
 X = raviartthomas(Γ);
 # X = BEAST.gwpdiv(Γ; order=3)
 
-# The integral equation can be wrtiten down in terms of the single layer operaotr
-# and a plane wave excitation.
+κ, η = 1.0, 1.0
+t = Maxwell3D.singlelayer(wavenumber=κ)
+E = Maxwell3D.planewave(direction=ẑ, polarization=x̂, wavenumber=κ)
+e = (n × E) × n
 
-κ, η = 1.0, 1.0;
-t = Maxwell3D.singlelayer(wavenumber=κ);
-E = Maxwell3D.planewave(direction=ẑ, polarization=x̂, wavenumber=κ);
-e = (n × E) × n;
+@hilbertspace j
+@hilbertspace k
+efie = @discretise t[k,j]==e[k]  j∈X k∈X
+u, ch = BEAST.gmres_ch(efie; restart=1500)
 
-# To write down the final variational formulation, placeholders for the test and
-# trial functions are required.
+include("utils/postproc.jl")
+include("utils/plotresults.jl")
 
 @hilbertspace j;
 @hilbertspace k;

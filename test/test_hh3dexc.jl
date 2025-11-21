@@ -1,16 +1,14 @@
-@testitem "excitation: HH3D" begin
 using CompScienceMeshes
-# using BEAST
-# using Test
+using BEAST
+using Test
 
 for T in [Float32, Float64]
-    # sphere = readmesh(joinpath(dirname(@__FILE__),"assets","sphere5.in"), T=T)
-    sphere = readmesh(joinpath(dirname(pathof(BEAST)),"../test","assets","sphere5.in"), T=T)
-    # numcells(sphere)
+    sphere = readmesh(joinpath(dirname(@__FILE__),"assets","sphere5.in"), T=T)
+    numcells(sphere)
 
-    κ = T(2π)
+    local κ = T(2π)
     direction = point(T,0,0,1)
-    f = BEAST.HH3DPlaneWave(direction, im*κ, T(1.0))
+    local f = BEAST.HH3DPlaneWave(direction, im*κ, T(1.0))
 
     v1 = f(point(T,0,0,0))
     v2 = f(point(T,0,0,0.5))
@@ -26,29 +24,27 @@ for T in [Float32, Float64]
 
     γnlp = dot(BEAST.NormalVector(), gradlp)
 
-    # import BEAST.∂n
+    import BEAST.∂n
     p = ∂n(f)
 
-    s = chart(sphere,first(sphere))
-    c = neighborhood(s, T.([1,1]/3))
+    local s = chart(sphere,first(sphere))
+    local c = neighborhood(s, T.([1,1]/3))
 
     r = cartesian(c)
-    nr = normal(s)
+    local n = normal(s)
 
     w1 = p(c)
-    w2 = -im*κ*dot(direction, nr)*f(r)
+    w2 = -im*κ*dot(direction, n)*f(r)
 
     w1 ≈ w2
 
-    N = BEAST.HH3DHyperSingularFDBIO(im*κ)
-    X = BEAST.lagrangec0d1(sphere)
+    local N = BEAST.HH3DHyperSingularFDBIO(im*κ)
+    local X = BEAST.lagrangec0d1(sphere)
 
-    # numfunctions(X)
+    numfunctions(X)
 
-    # BEAST.quadinfo(N, X, X)
+    BEAST.quadinfo(N, X, X)
     Nxx = assemble(N, X, X)
 
     @test size(Nxx) == (numfunctions(X), numfunctions(X))
-end
-
 end

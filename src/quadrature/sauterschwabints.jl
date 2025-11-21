@@ -62,7 +62,6 @@ function _krondot_gen(a::Type{U}, b::Type{V}) where {U<:SVector{N}, V<:SVector{M
     end
     return ex
 end
-
 @generated function _krondot(a::SVector{N}, b::SVector{M}) where {M,N}
     ex = _krondot_gen(a,b)
     return ex
@@ -78,12 +77,14 @@ function _integrands_gen(::Type{U}, ::Type{V}) where {U<:SVector{N}, V<:SVector{
     end
     return ex
 end
-
 @generated function _integrands(f, a::SVector{N}, b::SVector{M}) where {M,N}
     ex = _integrands_gen(a,b)
     # println(ex)
     return ex
 end
+
+
+
 
 function _integrands_leg_gen(f::Type{U}, g::Type{V}) where {U<:SVector{N}, V<:SVector{M}} where {M,N}
     ex = :(SMatrix{N,M}(()))
@@ -104,9 +105,16 @@ function (igd::Integrand)(x,y,f,g)
 
     op = igd.operator
     kervals = kernelvals(op, x, y)
-    return _integrands_leg(op, kervals, f, x, g, y)
+    _integrands_leg(op, kervals, f, x, g, y)
 
 end
+
+# function CompScienceMeshes.permute_vertices(
+#     ch::CompScienceMeshes.RefQuadrilateral, I)
+
+#     V = vertices(ch)
+#     return Quadrilateral(V[I[1]], V[I[2]], V[I[3]], V[I[4]])
+# end
 
 struct PulledBackIntegrand{I,C1,C2}
     igd::I
@@ -209,14 +217,8 @@ function integrate!(op::Operator,
 
     igd = Integrand(op, test_local_space, trial_local_space, test_chart, trial_chart)
     igdp = pulledback_integrand(igd, I, test_chart, J, trial_chart)
-
-    G = sauterschwab_parameterized(igdp, rule)
-
-    for j in 1:num_bshapes
-        for i in 1:num_tshapes
-            out[i,j] += G[i,j]
-        end
-    end
+    G = SauterSchwabQuadrature.sauterschwab_parameterized(igdp, rule)
+    out[1:num_tshapes, 1:num_bshapes] .+= G
 
     nothing
 end
@@ -226,7 +228,6 @@ function integrate!(op::Operator,
     test_chart, trial_chart,
     out, rule::SauterSchwab3DStrategy)
 
-    I, J = SauterSchwab3D.reorder(rule.sing)
 
     num_tshapes = numfunctions(test_local_space, domain(test_chart))
     num_bshapes = numfunctions(trial_local_space, domain(trial_chart))

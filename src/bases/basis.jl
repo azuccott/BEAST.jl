@@ -435,7 +435,7 @@ function functionvals(s::BEAST.Space, index::Int, n=3)
 end
 
 
-#= NOT USED
+
 function eval(s::BEAST.Space, i::Int, cellid, u)
 
     ch = chart(cellid, s.geo)

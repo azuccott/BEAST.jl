@@ -25,58 +25,6 @@ function quaddata(op::IntegralOperator,
 
     return (tpoints=tqd, bpoints=bqd, gausslegendre=leg)
 end
-function quaddata(op::IntegralOperator,
-    test_local_space::RefSpace, trial_local_space::RefSpace,
-    test_charts::Vector{<:CompScienceMeshes.Simplex{<:Any, 3}}, trial_charts::Vector{<:CompScienceMeshes.Simplex{<:Any, 3}}, qs::DoubleNumSauterQstrat)
-
-    #The combinations of rules (6,7) and (5,7 are) BAAAADDDD
-    # they result in many near singularity evaluations with any
-    # resemblence of accuracy going down the drain! Simply don't!
-    # (same for (5,7) btw...).
-    t_qp = quadpoints(test_local_space,  test_charts,  (qs.outer_rule,))
-    b_qp = quadpoints(trial_local_space, trial_charts, (qs.inner_rule,))
-
-    sing_qp = (SauterSchwab3D._legendre(qs.sauter_schwab_common_vert,0,1), 
-               SauterSchwab3D._shunnham2D(qs.sauter_schwab_common_edge),
-               SauterSchwab3D._shunnham3D(qs.sauter_schwab_common_face),
-               SauterSchwab3D._shunnham4D(qs.sauter_schwab_common_tetr),)
-    return (tpoints=t_qp, bpoints=b_qp, sing_qp=sing_qp)
-end
-function quaddata(op::IntegralOperator,
-    test_local_space::RefSpace, trial_local_space::RefSpace,
-    test_charts::Vector{<:CompScienceMeshes.Simplex{<:Any, 2}}, trial_charts::Vector{<:CompScienceMeshes.Simplex{<:Any, 3}}, qs::DoubleNumSauterQstrat)
-
-    #The combinations of rules (6,7) and (5,7 are) BAAAADDDD
-    # they result in many near singularity evaluations with any
-    # resemblence of accuracy going down the drain! Simply don't!
-    # (same for (5,7) btw...).
-    t_qp = quadpoints(test_local_space,  test_charts,  (qs.outer_rule,))
-    b_qp = quadpoints(trial_local_space, trial_charts, (qs.inner_rule,))
-
-    sing_qp = (SauterSchwab3D._legendre(qs.sauter_schwab_common_vert,0,1), 
-               SauterSchwab3D._shunnham2D(qs.sauter_schwab_common_edge),
-               SauterSchwab3D._shunnham3D(qs.sauter_schwab_common_face),
-               SauterSchwab3D._shunnham4D(qs.sauter_schwab_common_tetr),)
-    return (tpoints=t_qp, bpoints=b_qp, sing_qp=sing_qp)
-end
-
-function quaddata(op::IntegralOperator,
-    test_local_space::RefSpace, trial_local_space::RefSpace,
-    test_charts::Vector{<:CompScienceMeshes.Simplex{<:Any, 3}}, trial_charts::Vector{<:CompScienceMeshes.Simplex{<:Any, 2}}, qs::DoubleNumSauterQstrat)
-
-    #The combinations of rules (6,7) and (5,7 are) BAAAADDDD
-    # they result in many near singularity evaluations with any
-    # resemblence of accuracy going down the drain! Simply don't!
-    # (same for (5,7) btw...).
-    t_qp = quadpoints(test_local_space,  test_charts,  (qs.outer_rule,))
-    b_qp = quadpoints(trial_local_space, trial_charts, (qs.inner_rule,))
-
-    sing_qp = (SauterSchwab3D._legendre(qs.sauter_schwab_common_vert,0,1), 
-               SauterSchwab3D._shunnham2D(qs.sauter_schwab_common_edge),
-               SauterSchwab3D._shunnham3D(qs.sauter_schwab_common_face),
-               SauterSchwab3D._shunnham4D(qs.sauter_schwab_common_tetr),)
-    return (tpoints=t_qp, bpoints=b_qp, sing_qp=sing_qp)
-end
 
 
 function integrate!(op::IntegralOperator, g::RefSpace, f::RefSpace,

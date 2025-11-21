@@ -104,7 +104,7 @@ glbf_toppplate = BEAST.GlobalFunction(f, Γ, idx_topplate)
 
 ##
 
-Γ2 = CompScienceMeshes.meshcuboid(a,a,a,U(1.0); generator=:gmsh)
+Γ2 = CompScienceMeshes.meshcuboid(a,a,a,U(1.0))
 
 coeffsΓ2 = [v[3] for v in vertices(Γ2)]
 

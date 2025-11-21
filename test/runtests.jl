@@ -4,8 +4,6 @@ using StaticArrays
 
 module PkgTests
 
-using TestItemRunner
-
 using Distributed
 using LinearAlgebra
 using SparseArrays
@@ -18,7 +16,6 @@ include("test_fourier.jl")
 include("test_specials.jl")
 
 include("test_basis.jl")
-include("test_lagrange.jl")
 include("test_directproduct.jl")
 include("test_raviartthomas.jl")
 include("test_rt.jl")
@@ -78,7 +75,7 @@ include("test_nitschehh3d.jl")
 
 include("test_curlcurlgreen.jl")
 include("test_hh3dtd_exc.jl")
-# include("test_hh3dexc.jl")
+include("test_hh3dexc.jl")
 include("test_hh3d_nearfield.jl")
 include("test_tdassembly.jl")
 include("test_tdhhdbl.jl")
@@ -96,7 +93,7 @@ include("test_variational.jl")
 
 include("test_handlers.jl")
 include("test_ncrossbdm.jl")
-#include("test_curl_lagc0d1_lagc0d2.jl")
+include("test_curl_lagc0d1_lagc0d2.jl")
 include("test_gridfunction.jl")
 
 include("test_itsolver.jl")

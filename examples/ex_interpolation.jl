@@ -4,7 +4,7 @@ using LinearAlgebra
 
 trias = CompScienceMeshes.meshrectangle(1.0,1.0,0.05)
 trias = CompScienceMeshes.meshcircle(1.0,0.5)
-tetrs = CompScienceMeshes.tetmeshcuboid(1.0,1.0,1.0,0.2;generator = :gmsh)
+tetrs = CompScienceMeshes.tetmeshcuboid(1,1,1,0.2)
 
 f = BEAST.ScalarTrace{Float64}(x -> sin(pi*x[1]*x[2])*sin(pi*x[2]))
 f2 = BEAST.ScalarTrace{Float64}(x -> (-x[2]*sin(2*pi*(x[1]^2+x[2]^2))*sin(atan(x[2],x[1])), x[1]*sin(2*pi*(x[1]^2+x[2]^2))*sin(atan(x[2],x[1])), 0) )
@@ -17,7 +17,6 @@ N = 4
 
 h = Vector(undef, N)
 errorL = Vector(undef, N)
-errorLnew = Vector(undef, N)
 errorBDM = Vector(undef, N)
 errorRT = Vector(undef, N)
 
@@ -116,7 +115,7 @@ for i in 1:N
 
     delta2[i] =0.5-0.025*i
 
-    tetrs =  tetmeshcuboid(1.0,1.0,1.0, delta2[i];generator = :gmsh)
+    tetrs =  tetmeshcuboid(1.0,1.0,1.0, delta2[i])
 
     bndry = boundary(tetrs)
     faces = skeleton(tetrs, 2)
@@ -152,12 +151,12 @@ end
 
 using Plots
 
-p2 = Plots.plot(delta,error, label="BDM3D", title="L2-Error on [0,1]^3",xlabel="h", ylabel="Error", legend=:bottomright, xaxis=:log, yaxis=:log)
-Plots.plot!(p2, delta2, error2, label="Nedelec Div", xlims=[0.075,0.55])
+p2 = plot(delta,error, label="BDM3D", title="L2-Error on [0,1]^3",xlabel="h", ylabel="Error", legend=:bottomright, xaxis=:log, yaxis=:log)
+plot!(p2, delta2, error2, label="Nedelec Div", xlims=[0.075,0.55])
 
-p1 = Plots.plot(h,real(errorL), label="Lagrange", title="L2-Error on [0,1]^2",xlabel="h", ylabel="Error", legend=:bottomright, xaxis=:log, yaxis=:log, xlims=[0.025,0.5])
-Plots.plot!(p1,h,real(errorBDM),label="BDM")
-Plots.plot!(p1,h,real(errorRT),label="Raviart-Thomas")
+p1 = plot(h,real(errorL), label="Lagrange", title="L2-Error on [0,1]^2",xlabel="h", ylabel="Error", legend=:bottomright, xaxis=:log, yaxis=:log, xlims=[0.025,0.5])
+plot!(p1,h,real(errorBDM),label="BDM")
+plot!(p1,h,real(errorRT),label="Raviart-Thomas")
 
-Plots.plot(p1,p2, layout=2)
+plot(p1,p2, layout=2)
 
