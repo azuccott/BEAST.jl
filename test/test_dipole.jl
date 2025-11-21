@@ -6,9 +6,7 @@ using StaticArrays
 using LinearAlgebra
 using BlockArrays
 
-# U = Float32
 for U in [Float32,Float64]
-    @show U
 
     c = U(3e8)
     μ0 = U(4*π*1e-7)
@@ -25,7 +23,7 @@ for U in [Float32,Float64]
     η = sqrt(μ/ε)
 
     a = U(1)
-    Γ_orig = CompScienceMeshes.meshcuboid(a,a,a,U(0.1); generator=:compsciencemeshes)
+    Γ_orig = CompScienceMeshes.meshcuboid(a,a,a,U(0.1))
     local Γ = translate(Γ_orig,SVector(U(-a/2),U(-a/2),U(-a/2)))
 
     Φ, Θ = U.([0.0]), range(U(0),stop=U(π),length=100)
@@ -59,7 +57,7 @@ for U in [Float32,Float64]
     nf_H_EFIE = potential(BEAST.MWDoubleLayerField3D(𝓚), pts, j_EFIE, X)
     ff_E_EFIE = potential(MWFarField3D(𝓣), pts, j_EFIE, X)
     ff_H_EFIE = potential(BEAST.MWDoubleLayerFarField3D(𝓚), pts, j_EFIE, X)
-    ff_H_EFIE_rotated = -potential(n × BEAST.MWDoubleLayerFarField3D(𝓚), pts, -j_EFIE, n × X)
+    ff_H_EFIE_rotated = potential(n × BEAST.MWDoubleLayerFarField3D(𝓚), pts, -j_EFIE, n × X)
     ff_H_EFIE_doublerotated = potential(n × BEAST.MWDoubleLayerRotatedFarField3D(n × 𝓚), pts, -j_EFIE, X)
 
 
@@ -82,9 +80,6 @@ for U in [Float32,Float64]
     nf_E_BCMFIE = potential(MWSingleLayerField3D(𝓣), pts, j_BCMFIE, X)
     nf_H_BCMFIE = potential(BEAST.MWDoubleLayerField3D(𝓚), pts, j_BCMFIE, X)
     ff_E_BCMFIE = potential(MWFarField3D(𝓣), pts, j_BCMFIE, X)
-
-    # @show length(pts)
-    # @show norm.(nf_E_BCMFIE - E.(pts)) ./ norm.(E.(pts))
 
     @test norm(nf_E_BCMFIE - E.(pts))/norm(E.(pts)) ≈ 0 atol=0.01
     @test norm(nf_H_BCMFIE - H.(pts))/norm(H.(pts)) ≈ 0 atol=0.01

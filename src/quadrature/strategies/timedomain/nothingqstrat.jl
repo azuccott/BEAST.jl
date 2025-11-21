@@ -1,2 +1,0 @@
-struct NothingQStrategy <: AbstractQuadStrat
-end

@@ -23,14 +23,17 @@ E = planewave(polarisation, direction, derive(gaussian), 1.0)
 @hilbertspace j′
 
 SL = TDMaxwell3D.singlelayer(speedoflight=1.0, numdiffs=1)
+# BEAST.@defaultquadstrat (SL, W, V) BEAST.OuterNumInnerAnalyticQStrat(7)
 
 tdefie = @discretise SL[j′,j] == -1.0E[j′]   j∈V  j′∈W
 xefie = BEAST.motsolve(tdefie)
 
-import PlotlyJS
-PlotlyJS.plot(xefie[1,:])
+import Plots
+Plots.plot(xefie[1,:])
+
+import Plotly
 fcr, geo = facecurrents(xefie[:,125], X)
-PlotlyJS.plot(patch(geo, norm.(fcr)))
+Plotly.plot(patch(geo, norm.(fcr)))
 
 
 
@@ -45,4 +48,4 @@ _, i1 = findmin(abs.(ω.-1.0))
 ue = Xefie[:,i1] / fouriertransform(gaussian)(ω1)
 
 fcr, geo = facecurrents(ue, X)
-PlotlyJS.plot(patch(geo, norm.(fcr)))
+Plotly.plot(patch(geo, norm.(fcr)))

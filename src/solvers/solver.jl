@@ -146,8 +146,7 @@ end
 scalartype(lf::LinForm) = scalartype(lf.terms...)
 scalartype(lt::LinTerm) = scalartype(lt.coeff, lt.functional)
 
-function assemble(lform::LinForm, X::DirectProductSpace;
-    quadstrat=BEAST.defaultquadstrat)
+function assemble(lform::LinForm, X::DirectProductSpace)
 
     @assert !isempty(lform.terms)
 
@@ -179,7 +178,7 @@ function assemble(lform::LinForm, X::DirectProductSpace;
         x = X.factors[m]
 
         for op in reverse(t.test_ops) x = op[end](op[1:end-1]..., x) end
-        b = assemble(t.functional, x; quadstrat)
+        b = assemble(t.functional, x)
         B[Block(m),Block(1)] = t.coeff * b
     end
 
@@ -229,19 +228,11 @@ function assemble(bf::BilForm, X::DirectProductSpace, Y::DirectProductSpace;
     T = Int32
     @assert !isempty(bf.terms)
 
-    Q = X.factors[1]
-    while Q isa BEAST.DirectProductSpace
-        Q = Q.factors[1]
-    end
-    spaceTimeBasis = isa(Q, BEAST.SpaceTimeBasis)
+    spaceTimeBasis = isa(X.factors[1], BEAST.SpaceTimeBasis)
 
     if spaceTimeBasis
-        if X[1] isa DirectProductSpace
-            p = 1
-        else
-            p = [numstages(temporalbasis(ch)) for ch in X.factors]
-        end
-        lincombv = ConvolutionOperators.AbstractConvOp[]
+        p = [numstages(temporalbasis(ch)) for ch in X.factors]
+        lincombv = ConvolutionOperators.LiftedConvOp[]
     else
         p = 1
         lincombv = LinearMap[]
@@ -255,11 +246,6 @@ function assemble(bf::BilForm, X::DirectProductSpace, Y::DirectProductSpace;
     U = BlockArrays.blockedrange(M)
     V = BlockArrays.blockedrange(N)
 
-    if !spaceTimeBasis
-        U = NestedUnitRanges.nestedrange(X, 1, numfunctions)
-        V = NestedUnitRanges.nestedrange(Y, 1, numfunctions)
-    end
-
     for term in bf.terms
 
         x = X.factors[term.test_id]
@@ -272,10 +258,11 @@ function assemble(bf::BilForm, X::DirectProductSpace, Y::DirectProductSpace;
             y = op[end](op[1:end-1]..., y)
         end
         
-        a = term.kernel
+        a = term.coeff * term.kernel
+        # qs = quadstrat(a, x, y)
         z = materialize(a, x, y; quadstrat)
 
-        Smap = term.coeff * lift(z, Block(term.test_id), Block(term.trial_id), U, V)
+        Smap = lift(z, Block(term.test_id), Block(term.trial_id), U, V)
         T = promote_type(T, eltype(Smap))
         push!(lincombv, Smap)
     end
@@ -296,11 +283,6 @@ function assemble(bf::BilForm, X::Space, Y::Space)
 end
 
 function assemble(bf::BilForm, pairs::Pair...)
-    dbf = discretise(bf, pairs...)
-    assemble(dbf)
-end
-
-function assemble(bf::LinForm, pairs::Pair...)
     dbf = discretise(bf, pairs...)
     assemble(dbf)
 end

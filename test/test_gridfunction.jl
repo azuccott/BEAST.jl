@@ -10,9 +10,7 @@ U = Float64
 a = U(1)
 
 # Cube between (3,3,3) and (4,4,4)
-Γ = translate(
-    CompScienceMeshes.meshcuboid(a,a,a,U(1.0); generator=:gmsh),
-    SVector(3.0,3.0,3.0))
+Γ = translate(CompScienceMeshes.meshcuboid(a,a,a,U(1.0)), SVector(3.0,3.0,3.0))
 
 C0 = lagrangec0d1(Γ)
 
@@ -104,7 +102,7 @@ glbf_toppplate = BEAST.GlobalFunction(f, Γ, idx_topplate)
 
 ##
 
-Γ2 = CompScienceMeshes.meshcuboid(a,a,a,U(1.0); generator=:gmsh)
+Γ2 = CompScienceMeshes.meshcuboid(a,a,a,U(1.0))
 
 coeffsΓ2 = [v[3] for v in vertices(Γ2)]
 

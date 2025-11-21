@@ -7,9 +7,6 @@ mutable struct RTBasis{T,M,P} <: Space{T}
 end
 
 RTBasis(geo, fns) = RTBasis(geo, fns, Vector{vertextype(geo)}(undef,length(fns)))
-Base.similar(space::RTBasis{T,M,P} where {T,M,P}, geo, fns, pos) = RTBasis(geo, fns, pos)
-
-
 
 positions(rt) = rt.pos
 refspace(space::RTBasis{T}) where {T} = RTRefSpace{T}()
@@ -268,14 +265,6 @@ function LinearAlgebra.cross(::NormalVector, s::RTBasis)
     fns = similar(s.fns)
     for (i,fn) in pairs(s.fns)
         fns[i] = [Shape(sh.cellid, sh.refid, sh.coeff) for sh in fn]
-    end
-    NDBasis(s.geo, fns, s.pos)
-end
-function LinearAlgebra.cross(s::RTBasis,::NormalVector)
-    @assert CompScienceMeshes.isoriented(s.geo)
-    fns = similar(s.fns)
-    for (i,fn) in pairs(s.fns)
-        fns[i] = [Shape(sh.cellid, sh.refid, -sh.coeff) for sh in fn]
     end
     NDBasis(s.geo, fns, s.pos)
 end

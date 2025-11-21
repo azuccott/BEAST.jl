@@ -2,15 +2,14 @@ import IterativeSolvers
 
 
 
-struct GMRESSolver{T,L,R,PL,PR} <: LinearMap{T}
+struct GMRESSolver{T,L,R,P} <: LinearMap{T}
     linear_operator::L
     maxiter::Int
     restart::Int
     abstol::R
     reltol::R
     verbose::Bool
-    left_preconditioner::PL
-    right_preconditioner::PR
+    left_preconditioner::P
 end
 
 
@@ -19,9 +18,7 @@ Base.axes(A::GMRESSolver) = reverse(axes(A.linear_operator))
 
 function GMRESSolver(op::L;
     left_preconditioner = nothing,
-    right_preconditioner = nothing,
     Pl = nothing,
-    Pr = nothing,
     maxiter=0,
     restart=0,
     abstol::R = zero(real(eltype(op))),
@@ -39,27 +36,15 @@ function GMRESSolver(op::L;
     end
     @assert Pl != nothing
 
-    if right_preconditioner == nothing
-        Pr == nothing && (Pr = IterativeSolvers.Identity())
-    else
-        if Pr == nothing
-            Pr = BEAST.Preconditioner(right_preconditioner)
-        else
-            error("Either supply Pl or left_preconditioner, not both.")
-        end
-    end
-    @assert Pr != nothing
-
     m, n = size(op)
     @assert m == n
 
-    maxiter == 0 && (maxiter = n)
+    maxiter == 0 && (maxiter = div(n, 5))
     restart == 0 && (restart = n)
 
-    PL = typeof(Pl)
-    PR = typeof(Pr)
+    P = typeof(Pl)
     T = eltype(op)
-    GMRESSolver{T,L,R,PL,PR}(op, maxiter, restart, abstol, reltol, verbose, Pl, Pr)
+    GMRESSolver{T,L,R,P}(op, maxiter, restart, abstol, reltol, verbose, Pl)
 end
 
 
@@ -83,21 +68,17 @@ function solve!(x, solver::GMRESSolver, b; abstol=solver.abstol, reltol=solver.r
         reltol=reltol,
         abstol=abstol,
         verbose=solver.verbose,
-        Pl=solver.left_preconditioner,
-        Pr=solver.right_preconditioner)
+        Pl=solver.left_preconditioner)
     return x, ch
 end
 
 
 function Base.:*(A::GMRESSolver, b::AbstractVector)
 
-    x, ch = solve(A, b)
-    return x
-    # T = promote_type(eltype(A), eltype(b))
-    # y = BlockedVector{T}(undef, (axes(A,2),))
-    # y = similar(Array{T}, axes(A,2))
+    T = promote_type(eltype(A), eltype(b))
+    y = PseudoBlockVector{T}(undef, (axes(A,2),))
 
-    # mul!(y, A, b)
+    mul!(y, A, b)
 end
 
 Base.size(solver::GMRESSolver) = reverse(size(solver.linear_operator))
@@ -110,12 +91,18 @@ function LinearAlgebra.mul!(y::AbstractVecOrMat, solver::GMRESSolver, x::Abstrac
     return y
 end
 
-LinearAlgebra.adjoint(A::GMRESSolver) = GMRESSolver(adjoint(A.linear_operator); maxiter=A.maxiter, restart=A.restart, abstol=A.abstol, reltol=A.reltol, verbose=A.verbose, Pl=A.right_preconditioner, Pr=A.left_preconditioner)
-LinearAlgebra.transpose(A::GMRESSolver) = GMRESSolver(transpose(A.linear_operator); maxiter=A.maxiter, restart=A.restart, abstol=A.abstol, reltol=A.reltol, verbose=A.verbose, Pl=A.right_preconditioner, Pr=A.left_preconditioner)
+LinearAlgebra.adjoint(A::GMRESSolver) = GMRESSolver(adjoint(A.linear_operator);
+    maxiter=A.maxiter,
+    restart=A.restart,
+    abstol=A.abstol,
+    reltol=A.reltol,
+    left_preconditioner=A.left_preconditioner,
+    verbose=A.verbose)
+LinearAlgebra.transpose(A::GMRESSolver) = GMRESSolver(transpose(A.linear_operator), A.maxiter, A.restart, A.abstol, A.reltol, A.verbose)
 
 
 
-function gmres_ch(eq::DiscreteEquation; maxiter=0, restart=0, tol=0, verbose=true)
+function gmres_ch(eq::DiscreteEquation; maxiter=0, restart=0, tol=0)
 
     lhs = eq.equation.lhs
     rhs = eq.equation.rhs
@@ -127,38 +114,20 @@ function gmres_ch(eq::DiscreteEquation; maxiter=0, restart=0, tol=0, verbose=tru
     Z = assemble(lhs, X, Y)
 
     if tol == 0
-        invZ = GMRESSolver(Z; maxiter, restart, verbose)
+        invZ = GMRESSolver(Z, maxiter=maxiter, restart=restart)
     else
-        invZ = GMRESSolver(Z; maxiter, restart, reltol=tol, verbose)
+        invZ = GMRESSolver(Z, maxiter=maxiter, restart=restart, reltol=tol)
     end
     x, ch = solve(invZ, b)
     # x = invZ * b
 
     ax = nestedrange(Y, 1, numfunctions)
-    return BlockedVector(x, (ax,)), ch
+    return PseudoBlockVector(x, (ax,)), ch
 end
 
 gmres(eq::DiscreteEquation; maxiter=0, restart=0, tol=0) = gmres_ch(eq; maxiter, restart, tol)[1]
 
-@testitem "GMRESSolver blocked" begin
-    using LinearAlgebra
-    using BEAST.BlockArrays
 
-    n = 3
-    J = Matrix{Float64}(I,n,n)
-    Z = zeros(Float64,n,n)
-    A = BlockedArray([Z J; -J Z], [n,n], [n,n])
-
-    Ai = BEAST.GMRESSolver(A)
-    b = collect(1:2n)
-
-    x = Ai * b
-    @test blocksize(x) == (2,)
-    @test blocksizes(x) == [(n,), (n,)]
-
-    @test x[1:n] ≈ -b[n+1:end]
-    @test x[n+1:end] ≈ b[1:n]
-end
 
 struct CGSolver{L,M,T} <: LinearMap{T}
     A::L
