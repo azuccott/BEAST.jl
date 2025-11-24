@@ -29,7 +29,7 @@ end
 refspace(space::LagrangeBasis{D,C,M,T,NF}) where {D,C,M,T,NF} = LagrangeRefSpace{T,D,dimension(geometry(space))+1,NF}()
 subset(s::S,I) where {S <: Space} = S(s.geo, s.fns[I], s.pos[I])
 
-function lagrangecxd0(mesh)
+f#=unction lagrangecxd0(mesh)
 
     U = universedimension(mesh)
     D1 = dimension(mesh)+1
@@ -47,7 +47,7 @@ function lagrangecxd0(mesh)
 
   NF = 1
   LagrangeBasis{0,-1,NF}(geometry, fns, pos)
-end
+end=#
 
 """
     unitfunctioncxd0(mesh)
@@ -334,16 +334,16 @@ end
 Build lagrangec0d1 elements, including (dirichlet=false)
 or excluding (dirichlet=true) those attached to boundary vertices.
 """
-function lagrangec0d1(mesh; dirichlet::Bool=true)
+#=function lagrangec0d1(mesh; dirichlet::Bool=true)
     if dirichlet == false
         # return lagrangec0d1(mesh, boundary(mesh))
         return lagrangec0d1(mesh, skeleton(mesh,0))
     else
         return lagrangec0d1_dirichlet(mesh)
     end
-end
+end=#
 
-function lagrangec0(mesh; order=1, dirichlet::Bool=true)
+#=function lagrangec0(mesh; order=1, dirichlet::Bool=true)
 
     @assert order>0
     if dirichlet == false
@@ -352,7 +352,7 @@ function lagrangec0(mesh; order=1, dirichlet::Bool=true)
     else
         return lagrangec0_dirichlet(mesh; order=order)
     end
-end
+end=#
 
 function lagrangec0d1(mesh, jct)
     vertexlist = interior_and_junction_vertices(mesh, jct)
@@ -360,7 +360,7 @@ function lagrangec0d1(mesh, jct)
 end
 
 # build continuous linear Lagrange elements on a 2D manifold
-function lagrangec0d1(mesh, vertexlist::Vector, ::Type{Val{3}})
+#=function lagrangec0d1(mesh, vertexlist::Vector, ::Type{Val{3}})
 
     T = coordtype(mesh)
     U = universedimension(mesh)
@@ -399,7 +399,7 @@ function lagrangec0d1(mesh, vertexlist::Vector, ::Type{Val{3}})
 
     NF = 3
     LagrangeBasis{1,0,NF}(mesh, fns, pos)
-end
+end=#
 
 # for manifolds of dimension 1
 function lagrangec0d1(mesh, vertexlist, ::Type{Val{2}})
@@ -504,7 +504,7 @@ function lagrangec0(mesh, vertexlist, ::Type{Val{2}}; order=1)
     LagrangeBasis{order,0,NF}(geometry, fns, pos)
 end
 
-function lagrangec0d1(mesh, nodes::CompScienceMeshes.AbstractMesh{<:Any,1})
+#=function lagrangec0d1(mesh, nodes::CompScienceMeshes.AbstractMesh{<:Any,1})
 
     Conn = connectivity(nodes, mesh, abs)
     rows = rowvals(Conn)
@@ -530,7 +530,7 @@ function lagrangec0d1(mesh, nodes::CompScienceMeshes.AbstractMesh{<:Any,1})
     NF = dimension(mesh) + 1
 
     LagrangeBasis{1,0,NF}(mesh, fns, pos)
-end
+end=#
 
 function lagrangec0(mesh, nodes::CompScienceMeshes.AbstractMesh{<:Any,1}; order=1)
 
@@ -575,7 +575,7 @@ function lagrangec0(mesh, nodes::CompScienceMeshes.AbstractMesh{<:Any,1}; order=
     LagrangeBasis{order,0,NF}(mesh, fns, pos)
 end
 
-function lagrangec0d2(mesh::CompScienceMeshes.AbstractMesh{U,3},
+#=function lagrangec0d2(mesh::CompScienceMeshes.AbstractMesh{U,3},
     nodes::CompScienceMeshes.AbstractMesh{U,1},
     edges::CompScienceMeshes.AbstractMesh{U,2}) where {U}
 
@@ -617,7 +617,7 @@ function lagrangec0d2(mesh::CompScienceMeshes.AbstractMesh{U,3},
 
     NF = 6
     LagrangeBasis{2,0,NF}(mesh, fns, pos)
-end
+end=#
 
 
 
@@ -808,7 +808,7 @@ end
 Build lagrangec0d2 elements, including boundary vertices (meaning assuming a closed mesh).
 """
 
-function lagrangec0d2(mesh)
+#=function lagrangec0d2(mesh)
 
     #mark non connectet vertices
     verts = skeleton(mesh, 0)
@@ -833,10 +833,10 @@ function lagrangec0d2(mesh)
     ids = findall(x -> x>0, cps[2,:])
   
     lagrangec0d2(mesh,vertexlist,cps,Val{dimension(mesh)+1})
-end
+end=#
 
 
-function lagrangec0d2(mesh, vertexlist::Vector, cellpairs::Array{Int,2}, ::Type{Val{3}})
+#=function lagrangec0d2(mesh, vertexlist::Vector, cellpairs::Array{Int,2}, ::Type{Val{3}})
 
     T = coordtype(mesh)
     U = universedimension(mesh)
@@ -930,7 +930,7 @@ function lagrangec0d2(mesh, vertexlist::Vector, cellpairs::Array{Int,2}, ::Type{
 
     NF = 6
     LagrangeBasis{2,0,NF}(mesh, functions, positions)
-end
+end=#
 
 
 gradient(space::LagrangeBasis{1,0}, geo, fns) = NDLCCBasis(geo, fns)

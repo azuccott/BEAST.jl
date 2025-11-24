@@ -211,7 +211,7 @@ function (f::LagrangeRefSpace{T,10,2})(mp) where T
 end
 
 # Evaluete linear lagrange elements on a triangle
-function (f::LagrangeRefSpace{T,1,3})(t) where T
+#=function (f::LagrangeRefSpace{T,1,3})(t) where T
     u,v,w, = barycentric(t)
 
     j = jacobian(t)
@@ -231,7 +231,7 @@ function (f::LagrangeRefSpace{T,0,3})(t, ::Type{Val{:withcurl}}) where T
     z = zero(cartesian(t))
     SVector(((value=i, curl=z,),))
 end
-
+=#
 #= Replaced by generalized curl using GWP functions
 function curl(ref::LagrangeRefSpace{T,1,3} where {T}, sh, el)
     sh1 = Shape(sh.cellid, mod1(sh.refid+1,3), -sh.coeff)
@@ -374,7 +374,7 @@ end
 
 
 ## Quadratic Lagrange element on a triangle
-function (f::LagrangeRefSpace{T,2,3})(t) where T
+#=function (f::LagrangeRefSpace{T,2,3})(t) where T
     u,v,w, = barycentric(t)
 
     j = jacobian(t)
@@ -390,7 +390,7 @@ function (f::LagrangeRefSpace{T,2,3})(t) where T
         (value=4*v*w, curl=4*σ*(w*(p[1]-p[3])+v*(p[2]-p[1]))/j),
         (value=w*(2*w-1), curl=σ*(p[2]-p[1])*(4w-1)/j),
     )
-end
+end=#
 
 
 #function curl(ref::LagrangeRefSpace{T,2,3} where {T}, sh, el)
@@ -476,68 +476,6 @@ end
 end
 
 
-function curl(localspace::LagrangeRefSpace, sh, ch)
-    fns = curl(localspace, sh.cellid, ch)
-    α = sh.coeff
-    S = typeof(sh)
-    return S[S(s.cellid, s.refid, α*s.coeff) for s in fns[sh.refid]]
-end
-
-
-function curl(localspace::LagrangeRefSpace{T,D,3,N}, cellid::Int, ch) where {T,D,N}
-    function fields(p)
-        map(localspace(p)) do x
-            x.curl
-        end
-    end
-    atol = sqrt(eps(T))
-    gwp = GWPDivRefSpace{T,D-1}()
-    coeffs = interpolate(fields, gwp, ch)
-    S = BEAST.Shape{T}
-    A = Vector{Vector{S}}(undef, size(coeffs,1))
-    for r in axes(coeffs,1)
-        A[r] = collect(S(cellid, c, coeffs[r,c]) for c in axes(coeffs,2) if abs(coeffs[r,c]) > atol)
-    end
-    return SVector{N}(A)
-end
-
-
-
-@testitem "curl - chartwise" begin
-    using LinearAlgebra
-    using CompScienceMeshes
-    const CSM = CompScienceMeshes
-
-    T = Float64
-    D = 1
-    NF = binomial(2+D, 2)
-    gwp = BEAST.GWPDivRefSpace{T,D-1}()
-    lgc = BEAST.LagrangeRefSpace{T,D,3,NF}()
-
-    ch = CSM.simplex(
-        point(1,0,0),
-        point(0,1,0),
-        point(0,0,0))
-
-    curlfns = BEAST.curl(lgc, 1, ch)
-
-    p = neighborhood(ch, (0.2341, 0.4321))
-    gwp_vals = gwp(p)
-    lgc_vals = lgc(p)
-
-    err = similar(Vector{T}, axes(gwp_vals))
-    for i in eachindex(lgc_vals)
-        val1 = lgc_vals[i].curl
-        val2 = zero(val1)
-        for sh in curlfns[i]
-            val2 += sh.coeff * gwp_vals[sh.refid].value
-        end
-        err[i] = norm(val1 - val2)
-    end
-    atol = sqrt(eps(T))
-    @test all(err .< atol)
-end
-
 
 function restrict(f::LagrangeRefSpace{T,2}, dom1, dom2) where T
 
@@ -585,112 +523,9 @@ end
 
 
 
-function curl(localspace::LagrangeRefSpace, sh, ch)
-    fns = curl(localspace, sh.cellid, ch)
-    α = sh.coeff
-    S = typeof(sh)
-    return S[S(s.cellid, s.refid, α*s.coeff) for s in fns[sh.refid]]
-end
-
-
-function curl(localspace::LagrangeRefSpace{T,D,3,N}, cellid::Int, ch) where {T,D,N}
-    function fields(p)
-        map(localspace(p)) do x
-            x.curl
-        end
-    end
-    atol = sqrt(eps(T))
-    gwp = GWPDivRefSpace{T,D-1}()
-    coeffs = interpolate(fields, gwp, ch)
-    S = BEAST.Shape{T}
-    A = Vector{Vector{S}}(undef, size(coeffs,1))
-    for r in axes(coeffs,1)
-        A[r] = collect(S(cellid, c, coeffs[r,c]) for c in axes(coeffs,2) if abs(coeffs[r,c]) > atol)
-    end
-    return SVector{N}(A)
-end
 
 
 
-@testitem "curl - chartwise" begin
-    using LinearAlgebra
-    using CompScienceMeshes
-    const CSM = CompScienceMeshes
-
-    T = Float64
-    D = 1
-    NF = binomial(2+D, 2)
-    gwp = BEAST.GWPDivRefSpace{T,D-1}()
-    lgc = BEAST.LagrangeRefSpace{T,D,3,NF}()
-
-    ch = CSM.simplex(
-        point(1,0,0),
-        point(0,1,0),
-        point(0,0,0))
-
-    curlfns = BEAST.curl(lgc, 1, ch)
-
-    p = neighborhood(ch, (0.2341, 0.4321))
-    gwp_vals = gwp(p)
-    lgc_vals = lgc(p)
-
-    err = similar(Vector{T}, axes(gwp_vals))
-    for i in eachindex(lgc_vals)
-        val1 = lgc_vals[i].curl
-        val2 = zero(val1)
-        for sh in curlfns[i]
-            val2 += sh.coeff * gwp_vals[sh.refid].value
-        end
-        err[i] = norm(val1 - val2)
-    end
-    atol = sqrt(eps(T))
-    @test all(err .< atol)
-end
-
-
-function restrict(f::LagrangeRefSpace{T,2}, dom1, dom2) where T
-
-    D = numfunctions(f)
-    Q = zeros(T, D, D)
-
-    # for each point of the new domain
-    for i in 1:3
-
-        #vertices
-        v = dom2.vertices[i]
-
-        # find the barycentric coordinates in dom1
-        uvn = carttobary(dom1, v)
-
-        # evaluate the shape functions in this point
-        x = neighborhood(dom1, uvn)
-        fx = f(x)
-
-        for j in 1:D
-            Q[j,i] = fx[j][1]
-        end
-        
-            
-        #edges
-        # find the center of edge i of dom2
-        a = dom2.vertices[mod1(i+1,3)]
-        b = dom2.vertices[mod1(i+2,3)]
-        v = (a + b) / 2
-
-        # find the barycentric coordinates in dom1
-        uvn = carttobary(dom1, v)
-
-        # evaluate the shape functions in this point
-        x = neighborhood(dom1, uvn)
-        fx = f(x)
-  
-        for j in 4:D
-            Q[j,i+3] = fx[j][1]
-        end
-    end
-
-    return Q
-end
 
 
 const _vert_perms_lag = [
