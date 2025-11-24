@@ -29,7 +29,7 @@ end
 refspace(space::LagrangeBasis{D,C,M,T,NF}) where {D,C,M,T,NF} = LagrangeRefSpace{T,D,dimension(geometry(space))+1,NF}()
 subset(s::S,I) where {S <: Space} = S(s.geo, s.fns[I], s.pos[I])
 
-f#=unction lagrangecxd0(mesh)
+#=function lagrangecxd0(mesh)
 
     U = universedimension(mesh)
     D1 = dimension(mesh)+1
