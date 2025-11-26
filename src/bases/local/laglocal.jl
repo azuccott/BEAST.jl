@@ -523,6 +523,68 @@ end
 end
 
 
+function curl(localspace::LagrangeRefSpace, sh, ch)
+    fns = curl(localspace, sh.cellid, ch)
+    α = sh.coeff
+    S = typeof(sh)
+    return S[S(s.cellid, s.refid, α*s.coeff) for s in fns[sh.refid]]
+end
+
+
+function curl(localspace::LagrangeRefSpace{T,D,3,N}, cellid::Int, ch) where {T,D,N}
+    function fields(p)
+        map(localspace(p)) do x
+            x.curl
+        end
+    end
+    atol = sqrt(eps(T))
+    gwp = GWPDivRefSpace{T,D-1}()
+    coeffs = interpolate(fields, gwp, ch)
+    S = BEAST.Shape{T}
+    A = Vector{Vector{S}}(undef, size(coeffs,1))
+    for r in axes(coeffs,1)
+        A[r] = collect(S(cellid, c, coeffs[r,c]) for c in axes(coeffs,2) if abs(coeffs[r,c]) > atol)
+    end
+    return SVector{N}(A)
+end
+
+
+
+@testitem "curl - chartwise" begin
+    using LinearAlgebra
+    using CompScienceMeshes
+    const CSM = CompScienceMeshes
+
+    T = Float64
+    D = 1
+    NF = binomial(2+D, 2)
+    gwp = BEAST.GWPDivRefSpace{T,D-1}()
+    lgc = BEAST.LagrangeRefSpace{T,D,3,NF}()
+
+    ch = CSM.simplex(
+        point(1,0,0),
+        point(0,1,0),
+        point(0,0,0))
+
+    curlfns = BEAST.curl(lgc, 1, ch)
+
+    p = neighborhood(ch, (0.2341, 0.4321))
+    gwp_vals = gwp(p)
+    lgc_vals = lgc(p)
+
+    err = similar(Vector{T}, axes(gwp_vals))
+    for i in eachindex(lgc_vals)
+        val1 = lgc_vals[i].curl
+        val2 = zero(val1)
+        for sh in curlfns[i]
+            val2 += sh.coeff * gwp_vals[sh.refid].value
+        end
+        err[i] = norm(val1 - val2)
+    end
+    atol = sqrt(eps(T))
+    @test all(err .< atol)
+end
+
 
 function strace(x::LagrangeRefSpace, cell, localid, face)
 
