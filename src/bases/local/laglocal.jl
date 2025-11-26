@@ -14,8 +14,8 @@ numfunctions(s::LagrangeRefSpace{T,Dg}, ch::CompScienceMeshes.ReferenceSimplex{D
 valuetype(ref::LagrangeRefSpace{T}, charttype) where {T} = T
 
 # Evaluate constant lagrange elements on anything
-#(ϕ::LagrangeRefSpace{T,0})(tp) where {T} = SVector(((value=one(T), derivative=zero(T)),))
-#(ϕ::LagrangeRefSpace{T,0,3})(tp) where {T} = SVector(((value=one(T), derivative=zero(T)),))
+(ϕ::LagrangeRefSpace{T,0})(tp) where {T} = SVector(((value=one(T), derivative=zero(T)),))
+(ϕ::LagrangeRefSpace{T,0,3})(tp) where {T} = SVector(((value=one(T), derivative=zero(T)),))
 
 
 # Evaluate linear Lagrange elements on a segment
