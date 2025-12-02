@@ -650,7 +650,7 @@ end
 
 function restrict(f::LagrangeRefSpace{T,2}, dom1, dom2) where T
 
-    D = numfunctions(f)
+    D = numfunctions(f, domain(dom1))
     Q = zeros(T, D, D)
 
     # for each point of the new domain
