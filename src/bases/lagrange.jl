@@ -1412,7 +1412,6 @@ function lagrangec0(mesh::CompScienceMeshes.AbstractMesh{<:Any,3}; order)
             lids = localindices(_LagrangeGlobalNodesDoFs(d), cell_ch, localspace, i)
             v = globaldofs(vertex_ch, cell_ch, localspace, _LagrangeGlobalNodesDoFs(d))
             α = v[lids, :]
-            @show α
             β = inv(α')
             for i in axes(β,1)
                 for j in axes(β,2)
