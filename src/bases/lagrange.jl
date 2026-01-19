@@ -575,7 +575,7 @@ function lagrangec0(mesh, nodes::CompScienceMeshes.AbstractMesh{<:Any,1}; order=
     LagrangeBasis{order,0,NF}(mesh, fns, pos)
 end
 
-function lagrangec0d2(mesh::CompScienceMeshes.AbstractMesh{U,3},
+#=function lagrangec0d2(mesh::CompScienceMeshes.AbstractMesh{U,3},
     nodes::CompScienceMeshes.AbstractMesh{U,1},
     edges::CompScienceMeshes.AbstractMesh{U,2}) where {U}
 
@@ -617,7 +617,7 @@ function lagrangec0d2(mesh::CompScienceMeshes.AbstractMesh{U,3},
 
     NF = 6
     LagrangeBasis{2,0,NF}(mesh, fns, pos)
-end
+end=#
 
 
 
@@ -808,7 +808,7 @@ end
 Build lagrangec0d2 elements, including boundary vertices (meaning assuming a closed mesh).
 """
 
-function lagrangec0d2(mesh)
+#=function lagrangec0d2(mesh)
 
     #mark non connectet vertices
     verts = skeleton(mesh, 0)
@@ -833,10 +833,10 @@ function lagrangec0d2(mesh)
     ids = findall(x -> x>0, cps[2,:])
   
     lagrangec0d2(mesh,vertexlist,cps,Val{dimension(mesh)+1})
-end
+end=#
 
 
-function lagrangec0d2(mesh, vertexlist::Vector, cellpairs::Array{Int,2}, ::Type{Val{3}})
+#=function lagrangec0d2(mesh, vertexlist::Vector, cellpairs::Array{Int,2}, ::Type{Val{3}})
 
     T = coordtype(mesh)
     U = universedimension(mesh)
@@ -930,7 +930,7 @@ function lagrangec0d2(mesh, vertexlist::Vector, cellpairs::Array{Int,2}, ::Type{
 
     NF = 6
     LagrangeBasis{2,0,NF}(mesh, functions, positions)
-end
+end=#
 
 
 gradient(space::LagrangeBasis{1,0}, geo, fns) = NDLCCBasis(geo, fns)
