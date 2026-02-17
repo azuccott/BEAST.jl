@@ -374,7 +374,7 @@ end
 
 
 ## Quadratic Lagrange element on a triangle
-#=function (f::LagrangeRefSpace{T,2,3})(t) where T
+function (f::LagrangeRefSpace{T,2,3})(t) where T
     u,v,w, = barycentric(t)
 
     j = jacobian(t)
@@ -390,7 +390,7 @@ end
         (value=4*v*w, curl=4*σ*(w*(p[1]-p[3])+v*(p[2]-p[1]))/j),
         (value=w*(2*w-1), curl=σ*(p[2]-p[1])*(4w-1)/j),
     )
-end=#
+end
 
 
 #function curl(ref::LagrangeRefSpace{T,2,3} where {T}, sh, el)
