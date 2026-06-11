@@ -278,6 +278,28 @@ function (igd::Integrand{<:MWDoubleLayer3DReg})(x,y,f,g)
     return _krondot(fvalue, G)
 end
 
+
+function (igd::Integrand{<:MWDoubleLayer3DLoop})(x,y,f,g)
+
+    γ = igd.operator.gamma
+
+    r = cartesian(x) - cartesian(y)
+    R = norm(r)
+    γR = γ*R
+    iR = 1/R
+    if γR < 1e-4
+        gradgreen = -(-(γR^2)/2+(γR^3)/3-(γR^4)/8)*(iR^3)/(4π)*r
+    else
+        gradgreen = -(γ*exp(-γR)*iR+expm1(-γR)*iR^2)*iR/(4π)*r
+    end
+        # -(expm1(γR)*(1+γR)+γR)*iR^3/(4pi) * r #-im*exp(-γR)*( im*γR + im*expm1(γR)) * iR^3/(4pi) * r
+
+    fvalue = getvalue(f)
+    gvalue = getvalue(g)
+    G = cross.(Ref(gradgreen), gvalue)
+    return _krondot(fvalue, G)
+end
+
 ################################################################################
 #
 #  Handling of operator parameters (Helmholtz and Maxwell)
