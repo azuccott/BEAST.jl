@@ -524,7 +524,6 @@ function lagrangec0(mesh, vertexlist, ::Type{Val{2}}; order=1)
     LagrangeBasis{order,0,NF}(geometry, fns, pos)
 end
 
-function lagrangec0d1(mesh, nodes::CompScienceMeshes.AbstractMesh{<:Any,1})
 function lagrangec0(mesh, vertexlist, ::Type{Val{2}}; order=1)
 
     if order > 10
@@ -1059,7 +1058,7 @@ end
 gradient(space::LagrangeBasis{1,0}, geo, fns) = NDLCCBasis(geo, fns)
 # gradient(space::LagrangeBasis{1,0}, geo::CompScienceMeshes.AbstractMesh{U,3} where {U}, fns) = NDBasis(geo, fns)
 
-curl(space::LagrangeBasis{1,0}, geo, fns) = RTBasis(geo, fns)
+#curl(space::LagrangeBasis{1,0}, geo, fns) = RTBasis(geo, fns)
 
 #curl(space::LagrangeBasis{2,0}, geo, fns) = BDMBasis(geo, fns) 
 
@@ -1406,7 +1405,7 @@ function localindices(dof::_LagrangeGlobalFaceDoFs, chart::CompScienceMeshes.Sim
         (i == 0 || j == 0 || k == 0) && continue
         # @show (i,j,k)
         push!(lids, lid)
-    end end
+    end 
     return lids
 end
 
