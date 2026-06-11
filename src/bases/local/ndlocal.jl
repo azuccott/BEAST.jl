@@ -8,6 +8,11 @@ there is no well defined concept of adjacent-ness.
 """
 mutable struct NDRefSpace{T} <: RefSpace{T} end
 
+function valuetype(ref::NDRefSpace{T}, charttype::Type) where {T}
+    SVector{universedimension(charttype),T}
+end
+
+
 function (ϕ::NDRefSpace)(nbd)
 
     u, v = parametric(nbd)
@@ -68,3 +73,21 @@ function restrict(ϕ::NDRefSpace{T}, dom1, dom2) where T
 
     return Q
 end
+
+
+function interpolate!(out, fields, interpolant::NDRefSpace{T}, chart) where {T}
+
+    for (f,(face, inj)) in zip(axes(out,2),
+        CompScienceMeshes.subcharts(chart, Val{1}))
+
+        u_face = T(1//2)
+        p_face = neighborhood(face, (u_face,))
+        t_face = -tangents(p_face, 1)
+        u_chart = cartesian(inj, u_face)
+        p_chart = neighborhood(chart, u_chart)
+        # n_chart = normal(p_chart)
+        # m_face = cross(t_face, n_chart)
+        vals = fields(p_chart)        
+        for (g,val) in zip(axes(out, 1), vals)
+            out[g,f] = dot(t_face, val)
+end end end

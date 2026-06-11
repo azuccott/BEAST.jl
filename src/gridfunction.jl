@@ -44,6 +44,39 @@ struct FEMFunction{T, X} <: AbstractMeshFunction
     space::X
 end
 
+function Base.getindex(u::BEAST.FEMFunction, b::BEAST.Variational.HilbertVector)
+    return BEAST.FEMFunction(u.coeffs[b], u.space[b.idx])
+end
+
+function Base.:-(u::BEAST.FEMFunction)
+    return BEAST.FEMFunction(-u.coeffs, u.space)
+end
+
+@testitem "FEMFunction getindex" begin
+    using CompScienceMeshes
+
+    Γ = CompScienceMeshes.meshrectangle(1.0, 1.0, 0.5)
+    X1 = BEAST.raviartthomas(Γ)
+
+    X = X1 × X1
+    ax = BEAST.NestedUnitRanges.nestedrange(X, 1, numfunctions)
+
+    coeffs = rand(numfunctions(X))
+    coeffs = BEAST.BlockArrays.BlockedVector(coeffs, (ax,))
+
+    u = BEAST.FEMFunction(coeffs, X)
+
+    @hilbertspace m[1:2]
+    u1 = u[m[1]]
+    u2 = u[m[2]]
+    u2 = -u1
+
+    @test u1 isa BEAST.FEMFunction
+    @test u2 isa BEAST.FEMFunction
+
+    @test u1.coeffs == -u2.coeffs
+end
+
 defaultquadstrat(field::FEMFunction) = SingleNumQStrat(7)
 returntype(f::FEMFunction{T,X}) where {T,X} = T
 
@@ -188,6 +221,7 @@ function Lp_integrate(
             active_global[i][cellindex] = true
         end
 
+        # tels = [chart(lincombgfs.gfs[j].geo,p) for p in lincombgfs.gfs[j].geo]
         tels = instantiate_charts(lincombgfs.gfs[j].geo, numcells(lincombgfs.gfs[j].geo), trues(numcells(lincombgfs.gfs[j].geo)))
         qd = quaddata(lincombgfs.gfs[j], tels, quadstrat)
         push!(qds_global, qd)
@@ -206,6 +240,7 @@ function Lp_integrate(
 
     retval = Float64(0) #returntype(first(lincombgfs.gfs))(0)
 
+    # tels = [chart(geo, p) for p in 1:numcells(geo)]
     tels = instantiate_charts(geo, numcells(geo), trues(numcells(geo)))
 
     for (t, tcell) in enumerate(tels)

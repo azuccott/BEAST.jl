@@ -13,9 +13,9 @@ for T in [Float32, Float64]
     X = lagrangec0d1(Γ)
     @test numvertices(Γ)-2 == numfunctions(X)
 
-    hypersingular = HyperSingular(κ)
+    hypersingular = Helmholtz2D.hypersingular(; wavenumber=κ)
     identityop    = Identity()
-    doublelayer   = DoubleLayer(κ)
+    doublelayer   = Helmholtz2D.doublelayer(; wavenumber=κ)
 
     @show BEAST.defaultquadstrat(hypersingular, X, X)
     # @show @which BEAST.defaultquadstrat(hypersingular, X, X)
@@ -26,7 +26,9 @@ for T in [Float32, Float64]
     @test size(I) == (numfunctions(X), numfunctions(X))
     @test rank(I) == numfunctions(X)
 
-    @time e = assemble(PlaneWaveNeumann(κ, point(0.0, 1.0)), X)
+    E = Helmholtz2D.planewave(wavenumber=κ, direction=point(1.0,0.0))
+    @time e = assemble(BEAST.NormalDerivative(E), X)
+    #e = assemble(PlaneWaveNeumann(κ, point(0.0, 1.0)), X)
     @test length(e) == numfunctions(X)
 
     x1 = N \ e;
@@ -120,8 +122,11 @@ for T in [Float64]
     p4 = point(T,1,1,1)
     c1 = index(1,2,3)
 
-    m = Mesh([p1,p2,p3,p4],[c1])
-    b = Mesh([p1,p2], [index(1,2)])
+    V = [p1,p2,p3,p4]
+    C = [CompScienceMeshes.SimplexGraph(c1)]
+
+    m = Mesh(V,C)
+    b = Mesh([p1,p2], [CompScienceMeshes.SimplexGraph(1,2)])
     X = lagrangec0d1(m, boundary(m))
     @test numfunctions(X) == 3
 
@@ -251,7 +256,7 @@ for i in eachindex(crl.fns)
     crli = sort(crl.fns[i], by=sh->(sh.cellid, sh.refid))
     nxgradi = sort(nxgrad.fns[i], by=sh->(sh.cellid, sh.refid))
     for j in eachindex(crl.fns[i])
-        # @test crl.fns[i][j] == nxgrad.fns[i][j]
+        #@test crl.fns[i][j] == nxgrad.fns[i][j]
         @test crli[j].coeff == -nxgradi[j].coeff
     end
 end
@@ -262,7 +267,7 @@ m = Mesh([
     point(0,1,0),
     point(0,0,1),
     point(0,0,0)],
-    [index(1,2,3,4)])
+    [CompScienceMeshes.SimplexGraph(1,2,3,4)])
 
 lag = lagrangec0d1(m, skeleton(m,0))
 @test numfunctions(lag) == 4

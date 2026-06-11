@@ -52,6 +52,10 @@ end
 
 function touches_predicate(mesh)
 
+    function isless(a::CompScienceMeshes.SimplexGraph{N}, b::CompScienceMeshes.SimplexGraph{N}) where {N}
+        a.indices < b.indices
+    end
+
     verts = skeleton(mesh,0)
     verts = sort(verts.faces, lt=isless)
 
@@ -62,7 +66,7 @@ function touches_predicate(mesh)
 
         num_hits = 0
         for i in 1:length(s)
-            if !isempty(searchsorted(verts, SVector(s[i]), lt=isless))
+            if !isempty(searchsorted(verts, CompScienceMeshes.SimplexGraph(s[i]), lt=isless))
                 num_hits += 1
             end
         end
@@ -164,3 +168,39 @@ G2 = CompScienceMeshes.rotate(G1, 0.5π * x̂)
 G = CompScienceMeshes.weld(G1,G2)
 @test_throws AssertionError buffachristiansen(G)
 # G3 = CompScienceMeshes.rotate(G1, 1.0π * x̂)
+
+@testitem "Neumann BC" begin
+    using CompScienceMeshes
+    using LinearAlgebra
+
+    Γ = meshrectangle(1.0, 1.0, 0.1, 3)
+    all_edges = skeleton(Γ, 1)
+    bnd_edges = boundary(Γ)
+    int_edges = setminus(all_edges, bnd_edges)
+
+    X = raviartthomas(Γ, all_edges)
+    Y = Ydi = BEAST.buffachristiansen(Γ, bnd_edges)
+
+    T = Maxwell3D.singlelayer(wavenumber=1.0)
+    Id = BEAST.NCross()
+
+    Txx = assemble(T, X, X)
+    Tyy = assemble(T, Y, Y)
+
+    Ixy = assemble(Id, X, Y)
+    IYX = BEAST.GMRES(Ixy)
+    IXY = BEAST.GMRES(Ixy')
+
+    𝗧 = Matrix(Txx)
+    𝕋 = Matrix(Tyy)
+    𝗜 = Matrix(Ixy)
+    𝗜⁻¹ = inv(𝗜)
+    𝗜⁻ᵀ = transpose(𝗜⁻¹)
+    𝗣 = 𝗜⁻ᵀ * 𝕋 * 𝗜⁻¹
+    𝗣𝗧 = 𝗣*𝗧
+
+    @test cond(𝗧) > 1e3
+    @test cond(𝕋) > 1e3
+    @show cond(𝗜) < 20
+    @show cond(𝗣*𝗧) < 20
+end

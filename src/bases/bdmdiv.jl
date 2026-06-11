@@ -4,7 +4,8 @@ struct BDMBasis{T,M,P} <: Space{T}
     pos::Vector{P}
 end
 
-BDMBasis(geo, fns) = BDMBasis(geo, fns, Vector{vertextype(geo)}(undef,length(fns))) 
+BDMBasis(geo, fns) = BDMBasis(geo, fns, Vector{vertextype(geo)}(undef,length(fns)))
+
 
 refspace(s::BDMBasis{T}) where {T} = BDMRefSpace{T}()
 subset(s::BDMBasis,I) = BDMBasis(s.geo, s.fns[I], s.pos[I])
@@ -18,7 +19,8 @@ end
 
 function brezzidouglasmarini(mesh, cellpairs::Array{Int,2})
 
-    @warn "brezzidouglasmarini(mesh, cellpairs) assumes mesh is oriented"
+    @assert CompScienceMeshes.isoriented(mesh) "brezzidouglasmarini assumes mesh is oriented"
+    # @warn "brezzidouglasmarini(mesh, cellpairs) assumes mesh is oriented"
 
     @assert size(cellpairs,1) == 2
 
@@ -36,7 +38,7 @@ function brezzidouglasmarini(mesh, cellpairs::Array{Int,2})
         c1, c2 = cellpairs[:,i]
         cell1 = cells(mesh)[c1]
         cell2 = cells(mesh)[c2]
-        e1, e2 = getcommonedge(cell1, cell2)
+        e1, e2 = getcommonedge(cell1.indices, cell2.indices)
         @assert e1*e2 < 0
         e1, e2 = abs(e1), abs(e2)
         fns[2*(i-1)+1] = [ S(c1, 2*(e1-1)+1 ,+1.0), S(c2, 2*(e2-1)+2,-1.0)]

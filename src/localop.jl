@@ -57,11 +57,23 @@ function allocatestorage(op::LocalOperator, test_functions, trial_functions,
     return freeze, store
 end
 
+function assemble!(op::LocalOperator, tfs::Space, bfs::Space, store,
+        threading::Type{Threading{:cellcoloring}};
+        quadstrat=defaultquadstrat,
+        kwargs...)
+
+        assemble!(op, tfs, bfs, store, Threading{:multi}; quadstrat, kwargs...)
+end
+
 function assemble!(biop::LocalOperator, tfs::Space, bfs::Space, store,
         threading::Type{Threading{:multi}};
-        quadstrat=defaultquadstrat)
+        quadstrat=defaultquadstrat,
+        kwargs...)
 
         quadstrat = quadstrat(biop, tfs, bfs)
+
+    numfunctions(tfs) == 0 && return
+    numfunctions(bfs) == 0 && return
  
     if geometry(tfs) == geometry(bfs)
         return assemble_local_matched!(biop, tfs, bfs, store; quadstrat)
@@ -76,7 +88,8 @@ end
 
 function assemble!(biop::LocalOperator, tfs::Space, bfs::Space, store,
     threading::Type{Threading{:single}};
-    quadstrat=defaultquadstrat)
+    quadstrat=defaultquadstrat,
+    kwargs...)
 
     quadstrat = quadstrat(biop, tfs, bfs)
 
@@ -142,7 +155,7 @@ end
 function assemble_local_refines!(biop::LocalOperator, tfs::Space, bfs::Space, store;
     quadstrat=defaultquadstrat(biop, tfs, bfs))
 
-    println("Using 'refines' algorithm for local assembly:")
+    # println("Using 'refines' algorithm for local assembly:")
 
     tgeo = geometry(tfs)
     bgeo = geometry(bfs)
@@ -234,7 +247,7 @@ function assemble_local_matched!(biop::LocalOperator, tfs::subdBasis, bfs::subdB
 end end end end
 
 
-function elementstree(elements)
+function elementstree(elements, expansion_ratio=1)
 
     nverts = dimension(eltype(elements)) + 1
     ncells = length(elements)
@@ -261,7 +274,7 @@ function elementstree(elements)
         end
     end
 
-    return Octree(points, radii)
+    return Octree(points, radii, T(expansion_ratio))
 end
 
 
@@ -398,4 +411,32 @@ function cellinteractions(biop, trefs::U, brefs::V, cell, qr) where {U<:RefSpace
     end
 
     return zlocal
+end
+
+
+@testitem "assemble!: zero sized block" begin
+    using CompScienceMeshes
+
+    fn = joinpath(dirname(pathof(BEAST)), "../examples/assets/sphere45.in")
+    m1 = readmesh(fn)
+    m2 = m1[Int[]]
+
+    X = BEAST.DirectProductSpace([raviartthomas(m) for m in [m1, m2]])
+    Id = BEAST.Identity()
+
+    @hilbertspace j[1:2]
+    @hilbertspace k[1:2]
+    a = Id[k[1],j[1]] + Id[k[2],j[2]]
+
+    A = assemble(a, X, X)
+    M = AbstractMatrix(A)
+    import BEAST.BlockArrays
+
+    n1 = numfunctions(X[1])
+    n2 = numfunctions(X[2])
+
+    @test n2 == 0
+
+    @test BlockArrays.blocksize(M) == (2,2)
+    @test BlockArrays.blocksizes(M) == [(n1,n1) (n1,n2); (n2,n1) (n2,n2)]
 end

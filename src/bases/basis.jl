@@ -80,6 +80,35 @@ function DirectProductSpace(factors::Vector{S}) where {S<:AbstractSpace}
     return DirectProductSpace{T,S}(factors)
 end
 
+function DirectProductSpace(space::AbstractSpace)
+    T = scalartype(space)
+    return DirectProductSpace{T,typeof(space)}([space])
+end
+
+function DirectProductSpace(gentor)
+    A = collect(gentor)
+    # @show A
+    # @show typeof(A)
+    return DirectProductSpace(A)
+end
+
+function ∏(spaces::Vector)
+    return DirectProductSpace(spaces)
+end
+
+function ∏(space::AbstractSpace)
+    return DirectProductSpace([space])
+end
+
+function ∏(gentor)
+    A = collect(gentor)
+    return DirectProductSpace(A)
+end
+
+function ∏(space, spaces...)
+    return DirectProductSpace([space, spaces...])
+end
+
 Base.getindex(dps::DirectProductSpace, i) = dps.factors[i]
 
 defaultquadstrat(op, tfs::DirectProductSpace, bfs::DirectProductSpace) = defaultquadstrat(op, tfs.factors[1], bfs.factors[1])
@@ -260,6 +289,7 @@ function assemblydata(basis::Space; onlyactives=true)
         end
     end
 
+    # elements = [chart(geo, p) for p in act_to_global]
     return elements, AssemblyData(data), act_to_global
 end
 
@@ -405,7 +435,7 @@ function functionvals(s::BEAST.Space, index::Int, n=3)
 end
 
 
-
+#= NOT USED
 function eval(s::BEAST.Space, i::Int, cellid, u)
 
     ch = chart(cellid, s.geo)
@@ -423,4 +453,47 @@ function eval(s::BEAST.Space, i::Int, cellid, u)
     end
 
     return r
+end
+=#
+
+function union(spaces::Vector{S}) where {S<:Space}
+
+    geo1 = geometry(spaces[1])
+    for i in 2:length(spaces)
+        @assert geo1 == geometry(spaces[i])
+    end
+
+    fns = reduce(vcat, [s.fns for s in spaces])
+    pos = reduce(vcat, [s.pos for s in spaces])
+    return S(geo1, fns, pos)
+end
+
+@testitem "union of spaces" begin
+    using CompScienceMeshes
+   
+    m1 = meshrectangle(1.0, 1.0, 1.0, 3)
+    bnd_edges = boundary(m1)
+    int_edges = setminus(skeleton(m1, 1), bnd_edges)
+
+    X1 = raviartthomas(m1, int_edges)
+    X2 = raviartthomas(m1, bnd_edges)
+
+    X = BEAST.union([X1, X2])
+    @test numfunctions(X) == 5
+end
+
+
+function reduce_assembly_data(ad, active_dofs, active_els)
+    data = ad.data
+    num_shapes = size(data, 2)
+    ad1 = data[:,:,active_els]
+    dof_mapper = Dict((m,m1) for (m1,m) in enumerate(active_dofs))
+    for i in eachindex(active_els)
+        for j in 1:num_shapes
+            for k in 1:size(ad1,1)
+                (m,a) = ad1[k,j,i]
+                m1 = get(dof_mapper, m, 0)
+                ad1[k,j,i] = (m1, a)
+    end end end
+    return AssemblyData(ad1)
 end

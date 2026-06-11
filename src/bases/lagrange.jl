@@ -98,14 +98,16 @@ function unitfunctionc0d1_dirichlet(mesh)
     verts = skeleton(mesh, 0)
     detached = trues(numvertices(mesh))
     for v in cells(verts)
-        detached[v] = false
+        i = v.indices[1]
+        detached[i] = false
     end
 
     bnd = boundary(mesh)
     bndverts = skeleton(bnd, 0)
     notonbnd = trues(numvertices(mesh))
     for v in cells(bndverts)
-        notonbnd[v] = false
+        i = v.indices[1]
+        notonbnd[i] = false
     end
 
     vertexlist = findall(notonbnd .& .!detached)
@@ -131,7 +133,7 @@ function unitfunctionc0d1_dirichlet(mesh)
 
             cell = Cells[c]
 
-            localid = something(findfirst(isequal(v), cell),0)
+            localid = something(findfirst(isequal(v), cell.indices),0)
             @assert localid != 0
 
             shapes[s+n] = Shape(c, localid, T(1.0))
@@ -181,20 +183,24 @@ Construct the basis of continuous, piecewise linear basis functions subordinate
 to mesh `mesh`. Basis functions are constructed at vertices in the interior of
 the mesh and on the closure of 'bnd'. In particular, leaving out the second argument
 creates a finite element space subject to homogeneous Dirichlet boundary conditions.
+Construct the basis of continuous, piecewise linear basis functions subordinate
+to mesh `mesh`. Basis functions are constructed at vertices in the interior of
+the mesh and on the closure of 'bnd'. In particular, leaving out the second argument
+creates a finite element space subject to homogeneous Dirichlet boundary conditions.
 """
 function lagrangec0d1_dirichlet(mesh)
 
     verts = skeleton(mesh, 0)
     detached = trues(numvertices(mesh))
     for v in cells(verts)
-        detached[v] = false
+        detached[v.indices] = false
     end
 
     bnd = boundary(mesh)
     bndverts = skeleton(bnd, 0)
     notonbnd = trues(numvertices(mesh))
     for v in cells(bndverts)
-        notonbnd[v] = false
+        notonbnd[v.indices] = false
     end
 
     vertexlist = findall(notonbnd .& .!detached)
@@ -206,14 +212,14 @@ function lagrangec0_dirichlet(mesh; order=1)
     verts = skeleton(mesh, 0)
     detached = trues(numvertices(mesh))
     for v in cells(verts)
-        detached[v] = false
+        detached[v.indices[1]] = false
     end
 
     bnd = boundary(mesh)
     bndverts = skeleton(bnd, 0)
     notonbnd = trues(numvertices(mesh))
     for v in cells(bndverts)
-        notonbnd[v] = false
+        notonbnd[v.indices[1]] = false
     end
 
     vertexlist = findall(notonbnd .& .!detached)
@@ -224,24 +230,25 @@ function interior_and_junction_vertices(mesh, jct)
     verts = skeleton(mesh, 0)
     detached = trues(numvertices(mesh))
     for v in cells(verts)
-        detached[v] = false
+        detached[v.indices[1]] = false
     end
 
     bndfaces = boundary(mesh)
     bndverts = skeleton(bndfaces, 0)
     notonbnd = trues(numvertices(mesh))
     for v in cells(bndverts)
-        notonbnd[v] = false
+        notonbnd[v.indices[1]] = false
     end
 
     onjct = broadcast(!, notonbnd)
     overlap_with_junction = overlap_gpredicate(jct)
     for indices in cells(bndfaces)
-        bndface = simplex(vertices(bndfaces, indices))
+        # bndface = simplex(vertices(bndfaces, indices.indices))
+        bndface = chart(bndfaces, indices)
         if overlap_with_junction(bndface)
             continue
         else
-            for v in indices
+            for v in indices.indices
                 onjct[v] = false
             end
         end
@@ -333,6 +340,8 @@ end
 
 Build lagrangec0d1 elements, including (dirichlet=false)
 or excluding (dirichlet=true) those attached to boundary vertices.
+Build lagrangec0d1 elements, including (dirichlet=false)
+or excluding (dirichlet=true) those attached to boundary vertices.
 """
 function lagrangec0d1(mesh; dirichlet::Bool=true)
     if dirichlet == false
@@ -340,6 +349,17 @@ function lagrangec0d1(mesh; dirichlet::Bool=true)
         return lagrangec0d1(mesh, skeleton(mesh,0))
     else
         return lagrangec0d1_dirichlet(mesh)
+    end
+end
+
+function lagrangec0(mesh; order=1, dirichlet::Bool=true)
+
+    @assert order>0
+    if dirichlet == false
+        # return lagrangec0d1(mesh, boundary(mesh))
+        return lagrangec0(mesh, skeleton(mesh,0); order=order)
+    else
+        return lagrangec0_dirichlet(mesh; order=order)
     end
 end
 
@@ -387,7 +407,7 @@ function lagrangec0d1(mesh, vertexlist::Vector, ::Type{Val{3}})
             # cell = mesh.faces[c]
             cell = Cells[c]
 
-            localid = something(findfirst(isequal(v), cell),0)
+            localid = something(findfirst(isequal(v), cell.indices),0)
             @assert localid != 0
 
             shapes[s] = Shape(c, localid, T(1.0))
@@ -505,6 +525,65 @@ function lagrangec0(mesh, vertexlist, ::Type{Val{2}}; order=1)
 end
 
 function lagrangec0d1(mesh, nodes::CompScienceMeshes.AbstractMesh{<:Any,1})
+function lagrangec0(mesh, vertexlist, ::Type{Val{2}}; order=1)
+
+    if order > 10
+        error("Maximal 1D Lagrange polynomial order supported is 10")
+    end
+
+    T = coordtype(mesh)
+    U = universedimension(mesh)
+    P = vertextype(mesh)
+    S = Shape{T}
+
+    geometry = mesh
+
+    cellids, ncells = vertextocellmap(mesh)
+
+    # create the local shapes
+    numverts = numvertices(mesh)
+
+    fns = Vector{Vector{S}}()
+    pos = Vector{P}()
+
+    sizehint!(fns, length(vertexlist))
+    sizehint!(pos, length(vertexlist))
+    for v in vertexlist
+
+        numshapes = ncells[v]
+        numshapes == 0 && continue # skip detached vertices
+
+        shapes = Vector{S}(undef,numshapes)
+        for s in 1: numshapes
+            c = cellids[v,s]
+            cell = mesh.faces[c]
+            if cell[1] == v
+                shapes[s] = Shape(c, 1, T(1.0))
+            elseif cell[2] == v
+                shapes[s] = Shape(c, 2, T(1.0))
+            else
+                error("Junctions not supported")
+            end
+        end
+
+        push!(fns, shapes)
+        push!(pos, mesh.vertices[v])
+    end
+
+    NF = order + 1
+
+    for (c,cell) in enumerate(mesh)
+        ch = chart(mesh,cell)
+        for r in 3:NF
+            push!(fns, S[S(c,r,T(1.0))])
+            push!(pos, cartesian(neighborhood(ch, (r-2)/(NF-1))))
+        end
+    end
+
+    LagrangeBasis{order,0,NF}(geometry, fns, pos)
+end
+
+function lagrangec0d1(mesh, nodes::CompScienceMeshes.AbstractMesh{<:Any,1})
 
     Conn = connectivity(nodes, mesh, abs)
     rows = rowvals(Conn)
@@ -532,6 +611,48 @@ function lagrangec0d1(mesh, nodes::CompScienceMeshes.AbstractMesh{<:Any,1})
     LagrangeBasis{1,0,NF}(mesh, fns, pos)
 end
 
+function lagrangec0(mesh, nodes::CompScienceMeshes.AbstractMesh{<:Any,1}; order=1)
+
+    if order > 10
+        error("Maximal 1D Lagrange polynomial order supported is 10")
+    end
+
+    Conn = connectivity(nodes, mesh, abs)
+    rows = rowvals(Conn)
+    vals = nonzeros(Conn)
+
+    T = coordtype(mesh)
+    P = vertextype(mesh)
+    S = Shape{T}
+
+    fns = Vector{Vector{S}}()
+    pos = Vector{P}()
+
+    u = T(1.0)
+
+    for (i,node) in enumerate(nodes)
+        fn = Vector{S}()
+        for k in nzrange(Conn,i)
+            cellid = rows[k]
+            refid  = vals[k]
+            push!(fn, Shape(cellid, refid, u))
+        end
+        push!(fns,fn)
+        push!(pos,cartesian(center(chart(nodes,node))))
+    end
+
+    NF = order + 1
+
+    for (c, cell) in enumerate(mesh)
+        ch = chart(mesh, cell)
+        for r in 3:NF
+            push!(fns, S[S(c, r, u)])
+            push!(pos, cartesian(neighborhood(ch, SVector(u - (r-2)/(NF-1)))))
+        end
+    end
+
+    LagrangeBasis{order,0,NF}(mesh, fns, pos)
+end
 function lagrangec0(mesh, nodes::CompScienceMeshes.AbstractMesh{<:Any,1}; order=1)
 
     if order > 10
@@ -676,7 +797,7 @@ function duallagrangec0d1(mesh, refined, jct_pred, ::Type{Val{3}})
 
         n = vton[centroid_id]
         for c in vtoc[centroid_id,1:n]
-            fine_idcs = cells(refined)[c]
+            fine_idcs = cells(refined)[c].indices
             local_id = something(findfirst(isequal(centroid_id), fine_idcs), 0)
             @assert local_id != 0
             shape = Shape(c, local_id, 1.0)
@@ -688,7 +809,7 @@ function duallagrangec0d1(mesh, refined, jct_pred, ::Type{Val{3}})
             jct_pred(vertices(refined)[v]) && continue
             n = vton[v]
             for c in vtoc[v,1:n]
-                fine_idcs = cells(refined)[c]
+                fine_idcs = cells(refined)[c].indices
                 local_id = something(findfirst(isequal(v), fine_idcs),0)
                 @assert local_id != 0
                 #shape = Shape(c, local_id, 1/n/2)
@@ -703,7 +824,7 @@ function duallagrangec0d1(mesh, refined, jct_pred, ::Type{Val{3}})
             jct_pred(vertices(refined)[v]) && continue
             n = vton[v]
             for c in vtoc[v,1:n]
-                fine_idcs = cells(refined)[c]
+                fine_idcs = cells(refined)[c].indices
                 local_id = something(findfirst(isequal(v), fine_idcs),0)
                 @assert local_id != 0
                 shape = Shape(c, local_id, 1/(n/2))
@@ -751,7 +872,9 @@ function duallagrangec0d1(mesh, mesh2, pred, ::Type{Val{2}})
     # Now we will get all the smaller faces within the coarse segment
     #i.e The coose segment will have two points, and these tow points are connected to two segmesnts in the finer mesh
     # This will give us a 4 smaller faces per Dual lagrange basis, we store them first in all_faces
-    all_faces= Array{SVector{2,Int}}(undef,4)                      # faces in the original segment (4)
+    # all_faces= Array{SVector{2,Int}}(undef,4)                      # faces in the original segment (4)
+    CT = CompScienceMeshes.SimplexGraph{2}
+    all_faces = Vector{CT}(undef, 4)
     # the follwoing code get the verteciec for each coarse segment
     # then it looks for the two faces connected to each point in the finer mesh
     # if for example the segment would connect to more than two faces we will have
@@ -814,7 +937,7 @@ function lagrangec0d2(mesh)
     verts = skeleton(mesh, 0)
     detached = trues(numvertices(mesh))
     for v in cells(verts)
-        detached[v] = false
+        detached[v.indices[1]] = false
     end
 
     #identify
@@ -822,7 +945,7 @@ function lagrangec0d2(mesh)
     bndverts = skeleton(bnd, 0)
     notonbnd = trues(numvertices(mesh))
     for v in cells(bndverts)
-        notonbnd[v] = false
+        notonbnd[v.indices[1]] = false
     end
 
     vertexlist = findall(.!detached)
@@ -872,7 +995,7 @@ function lagrangec0d2(mesh, vertexlist::Vector, cellpairs::Array{Int,2}, ::Type{
             # cell = mesh.faces[c]
             cell = Cells[c]
 
-            localid = something(findfirst(isequal(v), cell),0)
+            localid = something(findfirst(isequal(v), cell.indices),0)
             @assert localid != 0
 
             shapes[s] = Shape(c, localid, 1.0)
@@ -897,17 +1020,17 @@ function lagrangec0d2(mesh, vertexlist::Vector, cellpairs::Array{Int,2}, ::Type{
         if cellpairs[2,i] > 0
             c1 = cellpairs[1,i]; cell1 = Cells[c1] #mesh.faces[c1]
             c2 = cellpairs[2,i]; cell2 = Cells[c2] #mesh.faces[c2]
-            e1, e2 = getcommonedge(cell1, cell2)
+            e1, e2 = getcommonedge(cell1.indices, cell2.indices)
             functions[numvertices+i] = [
               Shape(c1, abs(e1)+3, 1.0),
               Shape(c2, abs(e2)+3, 1.0)]
-            isct = intersect(cell1, cell2)
+            isct = intersect(cell1.indices, cell2.indices)
             @assert length(isct) == 2
-            @assert !(cell1[abs(e1)] in isct)
-            @assert !(cell2[abs(e2)] in isct)
+            @assert !(cell1.indices[abs(e1)] in isct)
+            @assert !(cell2.indices[abs(e2)] in isct)
 
-            v1 = cell1[mod1(abs(e1)+1,3)]
-            v2 = cell1[mod1(abs(e1)+2,3)]
+            v1 = cell1.indices[mod1(abs(e1)+1,3)]
+            v2 = cell1.indices[mod1(abs(e1)+2,3)]
 
             edge = simplex(mesh.vertices[[v1,v2]]...)
            
@@ -919,8 +1042,8 @@ function lagrangec0d2(mesh, vertexlist::Vector, cellpairs::Array{Int,2}, ::Type{
             functions[numvertices+i] = [
             Shape(c1, abs(e1)+3, +1.0)]
 
-            v1 = cell1[mod1(abs(e1)+1,3)]
-            v2 = cell1[mod1(abs(e1)+2,3)]
+            v1 = cell1.indices[mod1(abs(e1)+1,3)]
+            v2 = cell1.indices[mod1(abs(e1)+2,3)]
             edge = simplex(mesh.vertices[[v1,v2]]...)
            
             positions[numvertices+i] =  cartesian(center(edge))
@@ -938,59 +1061,7 @@ gradient(space::LagrangeBasis{1,0}, geo, fns) = NDLCCBasis(geo, fns)
 
 #curl(space::LagrangeBasis{1,0}, geo, fns) = RTBasis(geo, fns)
 
-##curl(space::LagrangeBasis{2,0}, geo, fns) = BDMBasis(geo, fns) 
-
-#curl(space::LagrangeBasis{2,0}, geo, fns) = GWPDivSpace(geo, fns,Vector{vertextype(geo)}(undef,length(fns)),1) #is it ok to live it undef?
-
-
-function curl(X::LagrangeBasis{D,C,M,T,NF,P} , geo, fns) where {D,C,M,T,NF,P}
-      GWPDivSpace{T,M,Vector{P}}(geo, fns, deepcopy(positions(X)),D-1)
-end
-
-
-@testitem "curl - global" begin
-    using LinearAlgebra
-    using CompScienceMeshes
-    const CSM = CompScienceMeshes
-
-    T = Float64
-
-    m = CSM.meshrectangle(1.0, 1.0, 0.5, 3)
-    X = BEAST.lagrangec0(m; order=1)
-    curlX = BEAST.curl(X)
-
-    x = BEAST.refspace(X)
-    curlx = BEAST.refspace(curlX)
-
-    err = zero(T)
-    for i in eachindex(X.fns)
-        fn = X.fns[i]
-        for j in eachindex(fn)
-            cellid = X.fns[i][j].cellid
-            ch = chart(m, cellid)
-            
-            u = (0.2341, 0.4312)
-            p = neighborhood(ch, u)
-
-            r1 = zeros(T,3)
-            ϕp = x(p)
-            for sh in X.fns[i]
-                sh.cellid == cellid || continue
-                r1 += sh.coeff * ϕp[sh.refid].curl
-            end
-
-            r2 = zeros(T,3)
-            ϕp = curlx(p)
-            for sh in curlX.fns[i]
-                sh.cellid == cellid || continue
-                r2 += sh.coeff * ϕp[sh.refid].value
-            end
-            global err = max(err, norm(r1-r2))
-        end
-    end
-
-    @test err < sqrt(eps(T))
-end
+#curl(space::LagrangeBasis{2,0}, geo, fns) = BDMBasis(geo, fns) 
 
 gradient(space::LagrangeBasis{1,0,<:CompScienceMeshes.AbstractMesh{<:Any,2}}, geo, fns) =
     LagrangeBasis{0,-1,1}(geo, fns, space.pos)
@@ -1324,8 +1395,7 @@ function localindices(dof::_LagrangeGlobalEdgeDoFs, chart::CompScienceMeshes.Sim
     return lids
 end
 
-function localindices(dof::_LagrangeGlobalFaceDoFs, chart::CompScienceMeshes.Simplex,
-    localspace, i)
+function localindices(dof::_LagrangeGlobalFaceDoFs, chart::CompScienceMeshes.Simplex,localspace, i)
 
     d = dof.order
     lids, lid = Int[], 0
@@ -1336,7 +1406,7 @@ function localindices(dof::_LagrangeGlobalFaceDoFs, chart::CompScienceMeshes.Sim
         (i == 0 || j == 0 || k == 0) && continue
         # @show (i,j,k)
         push!(lids, lid)
-    end
+    end end
     return lids
 end
 
