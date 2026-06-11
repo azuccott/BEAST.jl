@@ -652,48 +652,6 @@ function lagrangec0(mesh, nodes::CompScienceMeshes.AbstractMesh{<:Any,1}; order=
 
     LagrangeBasis{order,0,NF}(mesh, fns, pos)
 end
-function lagrangec0(mesh, nodes::CompScienceMeshes.AbstractMesh{<:Any,1}; order=1)
-
-    if order > 10
-        error("Maximal 1D Lagrange polynomial order supported is 10")
-    end
-
-    Conn = connectivity(nodes, mesh, abs)
-    rows = rowvals(Conn)
-    vals = nonzeros(Conn)
-
-    T = coordtype(mesh)
-    P = vertextype(mesh)
-    S = Shape{T}
-
-    fns = Vector{Vector{S}}()
-    pos = Vector{P}()
-
-    u = T(1.0)
-
-    for (i,node) in enumerate(nodes)
-        fn = Vector{S}()
-        for k in nzrange(Conn,i)
-            cellid = rows[k]
-            refid  = vals[k]
-            push!(fn, Shape(cellid, refid, u))
-        end
-        push!(fns,fn)
-        push!(pos,cartesian(center(chart(nodes,node))))
-    end
-
-    NF = order + 1
-
-    for (c, cell) in enumerate(mesh)
-        ch = chart(mesh, cell)
-        for r in 3:NF
-            push!(fns, S[S(c, r, u)])
-            push!(pos, cartesian(neighborhood(ch, SVector(u - (r-2)/(NF-1)))))
-        end
-    end
-
-    LagrangeBasis{order,0,NF}(mesh, fns, pos)
-end
 
 function lagrangec0d2(mesh::CompScienceMeshes.AbstractMesh{U,3},
     nodes::CompScienceMeshes.AbstractMesh{U,1},
