@@ -182,7 +182,7 @@ function (igd::Integrand{<:MWDoubleLayer3DLoop})(x,y,f,g)
     R = norm(r)
     γR = γ*R
     iR = 1/R
-    if γR < 1e-4
+    if abs(γR) < one(typeof(γR))/10^4
         gradgreen = -(-(γR^2)/2+(γR^3)/3-(γR^4)/8)*(iR^3)/(4π)*r
     else
         gradgreen = -(γ*exp(-γR)*iR+expm1(-γR)*iR^2)*iR/(4π)*r
