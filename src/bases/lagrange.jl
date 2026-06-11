@@ -1059,7 +1059,7 @@ end
 gradient(space::LagrangeBasis{1,0}, geo, fns) = NDLCCBasis(geo, fns)
 # gradient(space::LagrangeBasis{1,0}, geo::CompScienceMeshes.AbstractMesh{U,3} where {U}, fns) = NDBasis(geo, fns)
 
-#curl(space::LagrangeBasis{1,0}, geo, fns) = RTBasis(geo, fns)
+curl(space::LagrangeBasis{1,0}, geo, fns) = RTBasis(geo, fns)
 
 #curl(space::LagrangeBasis{2,0}, geo, fns) = BDMBasis(geo, fns) 
 
