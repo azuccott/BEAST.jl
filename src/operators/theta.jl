@@ -86,7 +86,7 @@ end
 
 function assemble(theta::NedelecTheta{Stars,Iterative},Y::Space,X::Space;quadstrat=defaultquadstrat)
     P = lagrangecx(X.geo,order=X.degree)
-    L = lagrangec0(X.geo,order=X.degree+1)
+    L = lagrangec0(X.geo,order=Y.degree+1)
     
     Gxx =  assemble(Identity(),X,X;quadstrat)
     Gdiv = assemble(Identity(),divergence(X),P;quadstrat)
