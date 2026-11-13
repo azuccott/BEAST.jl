@@ -45,13 +45,8 @@ function (igd::Integrand{<:IntegralOperator,<:DivRefSpace,<:DivRefSpace})(u,v)
     igd(x,y,f,g)
 end
 
-getvalue(a::SVector{N}) where {N} = SVector{N}(getvalue(a.data))
-getvalue(a::NTuple{1}) = (a[1].value,)
-getvalue(a::NTuple{N}) where {N} = tuple(a[1].value, getvalue(Base.tail(a))...)
-
-getdivergence(a::SVector{N}) where {N} = SVector{N}(getdivergence(a.data))
-getdivergence(a::NTuple{1}) = (a[1].divergence,)
-getdivergence(a::NTuple{N}) where {N} = tuple(a[1].divergence, getdivergence(Base.tail(a))...)
+getvalue(a::SVector)      = map(x -> x.value, a)
+getdivergence(a::SVector) = map(x -> x.divergence, a)
 
 function _krondot_gen(a::Type{U}, b::Type{V}) where {U<:SVector{N}, V<:SVector{M}} where {M,N}
     ex = :(SMatrix{N,M}(()))
