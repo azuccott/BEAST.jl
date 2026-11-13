@@ -148,9 +148,9 @@ function (igd::Integrand{<:MWDoubleLayer3D})(x,y,f,g)
     green = exp(-γ*R)*(iR*i4pi)
     gradgreen = -(γ + iR) * green * (iR * r)
 
-    fvalue = getvalue(f)
-    gvalue = getvalue(g)
-    G = cross.(Ref(gradgreen), gvalue)
+    fvalue = map(fi -> fi.value, f)                    # SVector{N}, unrolled by StaticArrays
+    G      = map(gj -> cross(gradgreen, gj.value), g)  # SVector{M}, computed once per trial function
+
     return _krondot(fvalue, G)
 end
 
