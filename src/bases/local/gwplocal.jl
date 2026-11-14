@@ -36,7 +36,10 @@ function (ϕ::GWPCurlRefSpace{T,Deg})(dom::CompScienceMeshes.ReferenceSimplex{Di
     u, v = u
     w = 1-u-v
 
-    s = range(zero(T), one(T), length=d+3)
+    s = _gwp_nodes(T, Val(Deg+3))
+    Ru, dRu, Rsu, dRsu = _sylpolys(s, u, Val(Deg+2))
+    Rv, dRv, Rsv, dRsv = _sylpolys(s, v, Val(Deg+2))
+    Rw, dRw, Rsw, dRsw = _sylpolys(s, w, Val(Deg+2))
 
     nd1 = point(T, -v, u-1)
     nd2 = point(T, -v+1, u)
@@ -44,43 +47,31 @@ function (ϕ::GWPCurlRefSpace{T,Deg})(dom::CompScienceMeshes.ReferenceSimplex{Di
 
     P = SVector{2,T}
     NT = @NamedTuple{value::P, curl::T}
-    # nts = Vector{NT}(undef, NF)
-    # nts = MVector{NF,NT}(undef)
     nts = resize!(ϕ.storage, NF)
     idx = 1
 
     i = 0
     for j in 1:d+1
         k = (d+2)-i-j
-            Rᵢ = _sylpoly(s, i+1, u)
-            Rⱼ = _sylpoly_shift(s, j+1, v)
-            Rₖ = _sylpoly_shift(s, k+1, w)
-            
-            dRᵢ = _sylpoly_diff(s, i+1, u)
-            dRⱼ = _sylpoly_shift_diff(s, j+1, v)
-            dRₖ = _sylpoly_shift_diff(s, k+1, w)
-            du = dRᵢ*Rⱼ*Rₖ - Rᵢ*Rⱼ*dRₖ
-            dv = Rᵢ*dRⱼ*Rₖ - Rᵢ*Rⱼ*dRₖ
-            curl = (du*nd1[2] - dv*nd1[1]) + 2*Rᵢ*Rⱼ*Rₖ
-
-            nts[idx] = (value=Rᵢ*Rⱼ*Rₖ*nd1, curl=curl)
-            idx += 1
+        Rᵢ = Ru[i+1];  dRᵢ = dRu[i+1]
+        Rⱼ = Rsv[j+1]; dRⱼ = dRsv[j+1]
+        Rₖ = Rsw[k+1]; dRₖ = dRsw[k+1]
+        du = dRᵢ*Rⱼ*Rₖ - Rᵢ*Rⱼ*dRₖ
+        dv = Rᵢ*dRⱼ*Rₖ - Rᵢ*Rⱼ*dRₖ
+        curl = (du*nd1[2] - dv*nd1[1]) + 2*Rᵢ*Rⱼ*Rₖ
+        nts[idx] = (value=Rᵢ*Rⱼ*Rₖ*nd1, curl=curl)
+        idx += 1
     end
 
     for i in 1:d+1
         j = 0
         k = (d+2)-i-j
-        Rᵢ = _sylpoly_shift(s, i+1, u)
-        Rⱼ = _sylpoly(s, j+1, v)
-        Rₖ = _sylpoly_shift(s, k+1, w)
-        
-        dRᵢ = _sylpoly_shift_diff(s, i+1, u)
-        dRⱼ = _sylpoly_diff(s, j+1, v)
-        dRₖ = _sylpoly_shift_diff(s, k+1, w)
+        Rᵢ = Rsu[i+1]; dRᵢ = dRsu[i+1]
+        Rⱼ = Rv[j+1];  dRⱼ = dRv[j+1]
+        Rₖ = Rsw[k+1]; dRₖ = dRsw[k+1]
         du = dRᵢ*Rⱼ*Rₖ - Rᵢ*Rⱼ*dRₖ
         dv = Rᵢ*dRⱼ*Rₖ - Rᵢ*Rⱼ*dRₖ
         curl = (du*nd2[2] - dv*nd2[1]) + 2*Rᵢ*Rⱼ*Rₖ
-
         nts[idx] = (value=Rᵢ*Rⱼ*Rₖ*nd2, curl=curl)
         idx += 1
     end
@@ -88,18 +79,12 @@ function (ϕ::GWPCurlRefSpace{T,Deg})(dom::CompScienceMeshes.ReferenceSimplex{Di
     for i in 1:d+1
         j = (d+2)-i
         k = 0
-        Rᵢ = _sylpoly_shift(s, i+1, u)
-        Rⱼ = _sylpoly_shift(s, j+1, v)
-        Rₖ = _sylpoly(s, k+1, w)
-        
-        dRᵢ = _sylpoly_shift_diff(s, i+1, u)
-        dRⱼ = _sylpoly_shift_diff(s, j+1, v)
-        dRₖ = _sylpoly_diff(s, k+1, w)
-        
+        Rᵢ = Rsu[i+1]; dRᵢ = dRsu[i+1]
+        Rⱼ = Rsv[j+1]; dRⱼ = dRsv[j+1]
+        Rₖ = Rw[k+1];  dRₖ = dRw[k+1]
         du = dRᵢ*Rⱼ*Rₖ - Rᵢ*Rⱼ*dRₖ
         dv = Rᵢ*dRⱼ*Rₖ - Rᵢ*Rⱼ*dRₖ
         curl = (du*nd3[2] - dv*nd3[1]) + 2*Rᵢ*Rⱼ*Rₖ
-
         nts[idx] = (value=Rᵢ*Rⱼ*Rₖ*nd3, curl=curl)
         idx += 1
     end
@@ -108,22 +93,16 @@ function (ϕ::GWPCurlRefSpace{T,Deg})(dom::CompScienceMeshes.ReferenceSimplex{Di
         for j in 1:d+1
             k = (d+2)-i-j
             k <= 0 && continue
-            Rsᵢ = _sylpoly_shift(s, i+1, u)
-            Rsⱼ = _sylpoly_shift(s, j+1, v)
-            Rsₖ = _sylpoly_shift(s, k+1, w)
-            Rᵢ = _sylpoly(s, i+1, u)
-            Rⱼ = _sylpoly(s, j+1, v)
-            Rₖ = _sylpoly(s, k+1, w)
+            Rsᵢ = Rsu[i+1]; dRsᵢ = dRsu[i+1]
+            Rsⱼ = Rsv[j+1]; dRsⱼ = dRsv[j+1]
+            Rsₖ = Rsw[k+1]; dRsₖ = dRsw[k+1]
+            Rᵢ  = Ru[i+1];  dRᵢ  = dRu[i+1]
+            Rⱼ  = Rv[j+1];  dRⱼ  = dRv[j+1]
+            Rₖ  = Rw[k+1];  dRₖ  = dRw[k+1]
+
             S1 = Rᵢ*Rsⱼ*Rsₖ*nd1
             S2 = Rsᵢ*Rⱼ*Rsₖ*nd2
             S3 = Rsᵢ*Rsⱼ*Rₖ*nd3
-
-            dRsᵢ = _sylpoly_shift_diff(s, i+1, u)
-            dRsⱼ = _sylpoly_shift_diff(s, j+1, v)
-            dRsₖ = _sylpoly_shift_diff(s, k+1, w)
-            dRᵢ = _sylpoly_diff(s, i+1, u)
-            dRⱼ = _sylpoly_diff(s, j+1, v)
-            dRₖ = _sylpoly_diff(s, k+1, w)
 
             du = dRᵢ*Rsⱼ*Rsₖ - Rᵢ*Rsⱼ*dRsₖ
             dv = Rᵢ*dRsⱼ*Rsₖ - Rᵢ*Rsⱼ*dRsₖ
@@ -139,10 +118,10 @@ function (ϕ::GWPCurlRefSpace{T,Deg})(dom::CompScienceMeshes.ReferenceSimplex{Di
 
             nts[idx] = (value=S2-S3, curl=curlS2 - curlS3)
             idx += 1
-            
             nts[idx] = (value=S3-S1, curl=curlS3 - curlS1)
             idx += 1
-    end end
+        end
+    end
 
     return SVector{NF}(nts)
 end

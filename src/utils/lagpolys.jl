@@ -45,3 +45,16 @@ end
 function _sylpoly_shift_diff(nodes, i, s)
     _lagpoly_diff(nodes, i, s, 2, i)
 end
+
+@inline function _gwp_nodes(::Type{T}, ::Val{N}) where {T,N}
+    SVector{N,T}(ntuple(i -> T(i-1) / T(N-1), Val(N)))
+end
+
+# Tables of all Sylvester polynomials (and derivatives) with index m = 1..M at x
+@inline function _sylpolys(nodes, x, ::Val{M}) where {M}
+    R   = SVector{M}(ntuple(m -> _sylpoly(nodes, m, x),            Val(M)))
+    dR  = SVector{M}(ntuple(m -> _sylpoly_diff(nodes, m, x),       Val(M)))
+    Rs  = SVector{M}(ntuple(m -> _sylpoly_shift(nodes, m, x),      Val(M)))
+    dRs = SVector{M}(ntuple(m -> _sylpoly_shift_diff(nodes, m, x), Val(M)))
+    return R, dR, Rs, dRs
+end
